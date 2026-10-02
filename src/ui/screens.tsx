@@ -310,6 +310,14 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
       </div>
       {!query && (
         <>
+          <nav className="now-links top">
+            <a href={href.shelf('')}>
+              <Icon name="shelf" size={18} /> 棚から探す
+            </a>
+            <a href={href.read()}>
+              <Icon name="note" size={18} /> 読みかけ・ピン
+            </a>
+          </nav>
           {queries.length > 0 && (
             <section className="block">
               <h2 className="label">最近の検索</h2>

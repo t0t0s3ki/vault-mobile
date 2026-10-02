@@ -24,7 +24,9 @@ const paths: Record<string, string> = {
   task: 'M4.5 4.5h15v15h-15zM8.5 12l2.5 2.5 4.5-5',
   heading: 'M5 5v14M15 5v14M5 12h10M18 19v-7l-2 1.4',
   bullet: 'M9 7h11M9 12h11M9 17h11M5 7h.01M5 12h.01M5 17h.01',
-  calendar: 'M4.5 6h15v14h-15zM4.5 10.5h15M8.5 3.5v4M15.5 3.5v4',
+  send: 'M21 3 10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z',
+  inbox: 'M3.5 13.5 6 5h12l2.5 8.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5h5l1.5 2.5h4l1.5-2.5h5',
+  calendar:'M4.5 6h15v14h-15zM4.5 10.5h15M8.5 3.5v4M15.5 3.5v4',
 };
 
 export function Icon({ name, size = 22, filled = false, label }: { name: keyof typeof paths | string; size?: number; filled?: boolean; label?: string }) {

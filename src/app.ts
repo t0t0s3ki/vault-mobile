@@ -110,7 +110,10 @@ export type Route =
   | { name: 'note'; path: string; anchor: string }
   | { name: 'edit'; path: string }
   | { name: 'settings' }
-  | { name: 'new' };
+  | { name: 'new' }
+  | { name: 'inbox'; tab: string }
+  | { name: 'waiting' }
+  | { name: 'read' };
 
 export function parseRoute(hash: string): Route {
   const [head, ...rest] = hash.replace(/^#\/?/, '').split('/');
@@ -128,6 +131,12 @@ export function parseRoute(hash: string): Route {
       return { name: 'edit', path: tail };
     case 'new':
       return { name: 'new' };
+    case 'inbox':
+      return { name: 'inbox', tab: tail || 'memo' };
+    case 'waiting':
+      return { name: 'waiting' };
+    case 'read':
+      return { name: 'read' };
     case 'settings':
       return { name: 'settings' };
     default:
@@ -142,6 +151,9 @@ export const href = {
   note: (path: string, anchor = '') => '#/note/' + encodeURIComponent(path + (anchor ? '#' + anchor : '')),
   edit: (path: string) => '#/edit/' + encodeURIComponent(path),
   settings: () => '#/settings',
+  inbox: (tab = '') => '#/inbox/' + tab,
+  waiting: () => '#/waiting',
+  read: () => '#/read',
 };
 
 export function useRoute() {

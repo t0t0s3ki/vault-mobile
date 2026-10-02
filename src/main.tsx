@@ -7,6 +7,9 @@ import { Import, Lock, Setup } from './ui/Gate';
 import { Icon } from './ui/icons';
 import { stamp, Toasts } from './ui/kit';
 import { Home, NoteView, Search, Settings, Shelf } from './ui/screens';
+import { Inbox } from './ui/inbox';
+import { Now, Waiting } from './ui/now';
+import { isCapture } from './ui/work';
 import './styles.css';
 
 /** After this long in the background the key is dropped and the lock screen returns. */
@@ -14,10 +17,9 @@ const RELOCK_MS = 10 * 60_000;
 
 function Nav({ active }: { active: string }) {
   const items = [
-    ['home', 'ホーム', href.home(), 'home'],
+    ['home', 'いま', href.home(), 'home'],
+    ['inbox', 'インボックス', href.inbox(), 'inbox'],
     ['search', '探す', href.search(), 'search'],
-    ['shelf', '棚', href.shelf(''), 'shelf'],
-    ['settings', '設定', href.settings(), 'gear'],
   ];
   return (
     <nav className="tabbar">
@@ -63,22 +65,32 @@ function App() {
   // Refresh on launch and whenever the app comes back to the front, whatever screen is showing.
   useEffect(() => {
     if (boot.s !== 'ready') return;
-    const { vault } = boot.ws;
+    const { ws } = boot;
+    const { vault } = ws;
     let running = false;
-    const refresh = () => {
-      if (running || document.hidden || (vault.syncedAt && Date.now() - vault.syncedAt < 3 * 60_000)) return;
+    // Captures (memo / clip / request) that could not be sent are sent as soon as possible:
+    // sending is what 関 asked for. Edits to existing notes wait for an explicit save.
+    const resend = () => {
+      for (const d of ws.saves.unsaved())
+        if (d.state === 'unknown' || (d.state === 'editing' && d.baseSha === '' && d.body.trim() && isCapture(ws, d.path))) void ws.saves.save(d.path);
+    };
+    const refresh = (launch = false) => {
+      if (document.hidden && !launch) return;
+      resend();
+      if (running || (vault.syncedAt && Date.now() - vault.syncedAt < 3 * 60_000)) return;
       running = true;
       vault.sync().then(
         () => (running = false),
         () => (running = false),
       );
     };
-    refresh();
-    document.addEventListener('visibilitychange', refresh);
-    addEventListener('online', refresh);
+    refresh(true);
+    const later = () => refresh();
+    document.addEventListener('visibilitychange', later);
+    addEventListener('online', later);
     return () => {
-      document.removeEventListener('visibilitychange', refresh);
-      removeEventListener('online', refresh);
+      document.removeEventListener('visibilitychange', later);
+      removeEventListener('online', later);
     };
   }, [boot]);
 
@@ -107,7 +119,10 @@ function App() {
     const full = route.name === 'note' || route.name === 'edit' || route.name === 'new';
     screen = (
       <div className={'app' + (full ? ' full' : '')}>
-        {route.name === 'home' && <Home ws={ws} />}
+        {route.name === 'home' && <Now ws={ws} />}
+        {route.name === 'read' && <Home ws={ws} />}
+        {route.name === 'inbox' && <Inbox ws={ws} tab={route.tab} />}
+        {route.name === 'waiting' && <Waiting ws={ws} />}
         {route.name === 'search' && <Search ws={ws} q={route.q} />}
         {route.name === 'shelf' && <Shelf key={route.path} ws={ws} path={route.path} />}
         {route.name === 'note' && <NoteView key={route.path} ws={ws} path={route.path} anchor={route.anchor} />}

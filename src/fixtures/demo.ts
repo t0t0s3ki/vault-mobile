@@ -198,3 +198,114 @@ updated: 2026-10-03
 `,
   '.obsidian/workspace.json': '{"hidden": true}',
 };
+
+/* ——— dated from today, so the demo reads the same any day ——— */
+const day = (offset: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const compact = (offset: number) => day(offset).replace(/-/g, '');
+
+demoVault['00_Cockpit/Tasks.md'] = `---
+type: tasks
+updated: ${day(0)}
+---
+# 📋 Tasks（ダミー）
+
+## 🔥 アクティブ
+
+### ⏰ 今週
+- [ ] 📜 🏢 読書会の会場を決めて参加者へ連絡する 📅 ${day(2)} ➕ ${day(-6)}
+\t📡 ${day(-1)} 候補は2か所。駅前の会議室は 10 名まで〔Thoth〕
+\t[[読書会_準備_20261005|準備ノート]]
+- [ ] 📜 💻 試作アプリを読書会メンバーに見せる 📅 ${day(5)} ➕ ${day(-3)}
+\t📡 ${day(0)} ダミー Vault で動く版を公開済み〔Thoth〕
+- [ ] 📜 ⏸ 佐藤さん・見積もりの返事 🛒 印刷費の見積もりを比べて発注する 📅 ${day(9)}
+- [ ] 📜 🏠 年末の帰省の切符を取る 📅 ${day(40)}
+
+### 🔘 押すだけ（関しか押せない・各5〜15分）
+- [ ] 🔘 🏢 田中さんの1on1枠を取り直す（5分）
+- [ ] 🔘 💻 共有ドライブの権限申請を出す・約10分
+- [ ] 🔘 🛒 モールの管理画面で配送設定を確認する（15分）
+
+## 🔁 ルーチン
+- 毎朝 08:30 Slack を見る
+
+## ⚡ Spark（衝動メニュー）
+- ⚡ 読む気になる画面とは何かを問答で詰める — [[読み心地]]
+- ⚡ 会議の準備ノートの型を作る
+
+## 🧊 アイスボックス
+- [ ] 📌 いつか：本棚を整理する
+### ⏸ 待ち（相手ボール・自分は動けない）
+- [ ] ⏸ 鈴木さん・日程の候補 🏢 読書会の次回日程を決める
+`;
+
+demoVault[`AI_Inbox/session_log/${compact(0)}.md`] = `# 📝 Session Log ${day(0)}
+
+## 読書会の会場候補を2つに絞った〔Thoth〕
+
+駅前の会議室（10名）と図書館の集会室（20名・予約は2週間前まで）。
+
+## 試作アプリのダミー Vault を更新〔Technē〕
+
+デモ用の Tasks・Job・クリップを足した。
+
+## 印刷費の見積もりの比較表〔Thoth〕
+
+3社のうち2社の数字がそろった。佐藤さんの返事待ち。
+`;
+
+demoVault[`00_Cockpit/jobs/done/JOB-${compact(-1)}-01_mobile-会場の比較.md`] = `---
+id: JOB-${compact(-1)}-01
+status: done
+kind: research
+actor: ACT-SEKI
+created: ${day(-1)}T08:12:00+09:00
+slug: mobile-会場の比較
+prompt: |
+  関が移動中にスマホ（vault-mobile）から頼んだ。調べて、答えと根拠をまとめる。
+
+  ## 依頼
+  読書会の会場候補を比べて
+artifacts: ["00_Cockpit/thinking/読書会_準備_20261005.md"]
+unknowns: 図書館の予約状況は電話でしか分からない
+finished_at: ${day(-1)}T09:31:00+09:00
+runner_hint: actions
+---
+# JOB-${compact(-1)}-01 mobile-会場の比較
+`;
+
+demoVault[`00_Cockpit/jobs/queued/JOB-${compact(0)}-01_mobile-印刷会社の候補.md`] = `---
+id: JOB-${compact(0)}-01
+status: queued
+kind: research
+actor: ACT-SEKI
+created: ${day(0)}T07:50:00+09:00
+slug: mobile-印刷会社の候補
+prompt: |
+  関が移動中にスマホ（vault-mobile）から頼んだ。調べて、答えと根拠をまとめる。
+
+  ## 依頼
+  小ロットに強い印刷会社をあと2社探して
+runner_hint: actions
+---
+# JOB-${compact(0)}-01 mobile-印刷会社の候補
+`;
+
+demoVault[`01_Inbox/Clips/${day(-1)}T10-00-00-000Z_demo0001.md`] = `---
+type: clip
+tags:
+  - clip
+status: inbox
+source: https://example.com/reading-ui
+created: ${day(-1)}
+captured_at: ${day(-1)}T10:00:00.000Z
+atelier_clip: true
+capture_note: 読書アプリの参考
+---
+# 長文を読ませる画面の作り方（ダミー）
+
+https://example.com/reading-ui
+`;
