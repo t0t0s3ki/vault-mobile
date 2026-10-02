@@ -1911,3 +1911,21 @@ details.callout[open] summary.callout-title {
   white-space: nowrap;
   font-size: 14px;
 }
+.ts-latest {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+.ts-more summary {
+  font-size: 13px;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.btn.wide {
+  flex-basis: 100%;
+}

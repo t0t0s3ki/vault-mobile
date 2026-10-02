@@ -25,6 +25,8 @@ export type Draft = {
   latest?: { sha: string; text: string } | null;
   error?: string;
   savedAt?: number;
+  /** Made by a one-tap capture (memo, clip, request): sending it is what was asked, so it is re-sent on its own. */
+  capture?: boolean;
 };
 
 export type DraftView = Draft & { dirty: boolean; persisted: boolean; storageError?: string };
@@ -115,11 +117,11 @@ export class SaveCoordinator {
   }
 
   /** Start (or resume) editing from the cached version of a file. */
-  begin(path: string, base: { sha: string; raw: string }) {
+  begin(path: string, base: { sha: string; raw: string }, opts: { capture?: boolean } = {}) {
     const existing = this.sessions.get(path);
     if (existing) return existing;
     const { body, shape } = toEditable(base.raw);
-    const d: Draft = { remote: this.remote.id, path, baseSha: base.sha, baseText: body, shape, body, updatedAt: this.now(), state: 'editing' };
+    const d: Draft = { remote: this.remote.id, path, baseSha: base.sha, baseText: body, shape, body, updatedAt: this.now(), state: 'editing', ...(opts.capture ? { capture: true } : {}) };
     this.sessions.set(path, d);
     this.persisted.set(path, true);
     this.emit();

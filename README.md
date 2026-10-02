@@ -1,6 +1,19 @@
 # vault-mobile
 
-A phone-first PWA for reading, searching and lightly editing a Markdown vault (Obsidian style) that lives in a GitHub repository. Japanese UI.
+A phone-first PWA onto a Markdown vault (Obsidian style) that lives in a GitHub repository and is shared with AI agents. Japanese UI.
+
+It is built for the moments away from the desk: *where does everything stand, what do I do next, and what should the agents be doing meanwhile*.
+
+## What the home screen ("いま") does
+
+- **Throw things in.** One field: save it as a memo (a unique note), hand it to the agents as a request, or clip a URL.
+- **Next promises.** Deadline items from `Tasks.md`, nearest first; only the last week gets a countdown. Tap for the status: the item's own progress notes, the linked note, and the session-log section that most likely concerns it. "終わった" ticks the line (`- [x] … ✅ date`); moving it to the done log stays with the vault's night routine.
+- **What the agents did.** New results and failures of requests, plus today's agent-signed session-log headings. Nothing is shown when nothing changed.
+- **Three quick buttons** at most, with total minutes, and **one Spark** for the ride. No full lists to patrol, no counters.
+
+Requests become files in the vault's existing unattended queue (`00_Cockpit/jobs/queued/`), written exactly as the vault's `jobs.py new` writes them (checked against its Python parser in tests). The result comes back as one note.
+
+Ticking a task re-reads the newest file and changes only the line with the same text, so edits other agents made meanwhile are kept.
 
 ## How it works
 
@@ -29,7 +42,7 @@ npm test
 npm run build      # adds a Content-Security-Policy meta tag
 ```
 
-`tests/save.test.ts` pins the save contract (ordering, edits during save, stale SHA, deletion, offline, lost response, reload, foreign drafts, auth failure, storage failure, CRLF/BOM, unknown syntax). `tests/lock.test.ts` checks that nothing readable reaches IndexedDB.
+`tests/work.test.ts` pins the task, job and clip writers (line-level rebase under concurrent edits, lost responses, Job files read back by the vault's Python parser). `tests/save.test.ts` pins the save contract (ordering, edits during save, stale SHA, deletion, offline, lost response, reload, foreign drafts, auth failure, storage failure, CRLF/BOM, unknown syntax). `tests/lock.test.ts` checks that nothing readable reaches IndexedDB.
 
 ## Reading order
 

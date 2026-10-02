@@ -80,17 +80,30 @@ export function useClips(ws: Workspace) {
 
 /* ——— capture: everything goes through the save coordinator, so it survives no signal ——— */
 
-/** Paths created by a capture; the app re-sends these on its own when the connection returns. */
-export function isCapture(ws: Workspace, path: string) {
-  return path.startsWith(ws.places.memos + '/') || path.startsWith(CLIPS + '/') || path.startsWith('00_Cockpit/jobs/queued/');
+/** Only drafts made by a one-tap capture are re-sent on their own (a memo typed in the editor waits for 保存). */
+export function isCapture(_ws: Workspace, d: { capture?: boolean }) {
+  return !!d.capture;
 }
 
 async function create(ws: Workspace, path: string, text: string) {
-  ws.saves.begin(path, { sha: '', raw: '' });
+  ws.saves.begin(path, { sha: '', raw: '' }, { capture: true });
   await ws.saves.edit(path, text);
-  const r = await ws.saves.save(path);
+  let r = await ws.saves.save(path);
+  // An automatic re-send can win the race between edit() and save(); the file is then already there.
+  if (r === 'unchanged' && (ws.saves.view(path)?.savedAt || ws.vault.entries.has(path))) r = 'saved';
   if (r === 'saved') ws.saves.close(path);
   return r;
+}
+
+/** Create under a fresh name if the chosen one turned out to exist elsewhere; never resolve onto it. */
+async function createFresh(ws: Workspace, make: () => { path: string; text: string }) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const f = make();
+    const r = await create(ws, f.path, f.text);
+    if (r !== 'conflict') return { r, path: f.path };
+    await ws.saves.discard(f.path);
+  }
+  return { r: 'conflict' as const, path: '' };
 }
 
 export function memoPath(ws: Workspace) {
@@ -99,14 +112,23 @@ export function memoPath(ws: Workspace) {
   return `${ws.places.memos}/${name}.md`;
 }
 
-export function captureMemo(ws: Workspace, text: string) {
-  return create(ws, memoPath(ws), text.trim() + '\n');
+export async function captureMemo(ws: Workspace, text: string) {
+  let bump = 0;
+  return (
+    await createFresh(ws, () => {
+      let path = memoPath(ws);
+      for (let i = 0; i < bump; i++) path = path.replace(/(\d+)\.md$/, (_, n) => String(Number(n) + 1) + '.md');
+      bump++;
+      return { path, text: text.trim() + '\n' };
+    })
+  ).r;
 }
 
 export function captureClip(ws: Workspace, input: { url: string; title?: string; note?: string }) {
-  const rand = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)).replace(/-/g, '').slice(0, 8);
-  const c = newClip(input, new Date(), rand);
-  return create(ws, c.path, c.text).then((r) => ({ r, path: c.path }));
+  return createFresh(ws, () => {
+    const rand = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)).replace(/-/g, '').slice(0, 8);
+    return newClip(input, new Date(), rand);
+  });
 }
 
 export async function captureJob(ws: Workspace, request: string, kind: RequestKind, context?: string) {

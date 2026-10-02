@@ -211,21 +211,30 @@ export function Home({ ws }: { ws: Workspace }) {
 
 /* ——— search ——— */
 
-const RECENT_Q = 'vault-mobile.queries';
-function readQueries(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_Q) || '[]');
-  } catch {
-    return [];
-  }
-}
-function rememberQuery(q: string) {
-  if (!q.trim()) return;
-  try {
-    localStorage.setItem(RECENT_Q, JSON.stringify([q, ...readQueries().filter((x) => x !== q)].slice(0, 8)));
-  } catch {
-    /* not remembered */
-  }
+/**
+ * Recent queries reveal what the notes are about, so they live in the sealed store
+ * (not localStorage, which any page on the same origin could read).
+ */
+let recentQueries: string[] | null = null;
+function useQueries(ws: Workspace) {
+  const key = ws.remote.id + '\u0000queries';
+  const [list, setList] = useState<string[]>(recentQueries ?? []);
+  useEffect(() => {
+    try {
+      localStorage.removeItem('vault-mobile.queries'); // from the first versions
+    } catch {
+      /* nothing stored */
+    }
+    if (recentQueries) return;
+    ws.store.get<string[]>('meta', key).then((q) => setList((recentQueries = q ?? [])), () => {});
+  }, []);
+  const remember = (q: string) => {
+    if (!q.trim()) return;
+    recentQueries = [q, ...(recentQueries ?? []).filter((x) => x !== q)].slice(0, 8);
+    setList(recentQueries);
+    void ws.store.put('meta', key, recentQueries).catch(() => {});
+  };
+  return { queries: list, rememberQuery: remember };
 }
 
 function Highlight({ text, terms }: { text: string; terms: string[] }) {
@@ -267,7 +276,7 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
     .map(([p]) => ws.vault.metas.get(p))
     .filter((m): m is NoteMeta => !!m)
     .slice(0, 6);
-  const queries = readQueries();
+  const { queries, rememberQuery } = useQueries(ws);
   const hit = (h: (typeof hits)[number]) => (
     <a key={h.meta.path} className="row" href={href.note(h.meta.path)} onClick={() => rememberQuery(query)}>
       <span className="row-main">

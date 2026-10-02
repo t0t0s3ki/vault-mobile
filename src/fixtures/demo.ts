@@ -222,12 +222,14 @@ updated: ${day(0)}
 - [ ] 📜 💻 試作アプリを読書会メンバーに見せる 📅 ${day(5)} ➕ ${day(-3)}
 \t📡 ${day(0)} ダミー Vault で動く版を公開済み〔Thoth〕
 - [ ] 📜 ⏸ 佐藤さん・見積もりの返事 🛒 印刷費の見積もりを比べて発注する 📅 ${day(9)}
-- [ ] 📜 🏠 年末の帰省の切符を取る 📅 ${day(40)}
 
 ### 🔘 押すだけ（関しか押せない・各5〜15分）
 - [ ] 🔘 🏢 田中さんの1on1枠を取り直す（5分）
 - [ ] 🔘 💻 共有ドライブの権限申請を出す・約10分
 - [ ] 🔘 🛒 モールの管理画面で配送設定を確認する（15分）
+
+### 🏠 プライベート
+- [ ] 📜 🏠 年末の帰省の切符を取る 📅 ${day(40)}
 
 ## 🔁 ルーチン
 - 毎朝 08:30 Slack を見る
@@ -257,8 +259,28 @@ demoVault[`AI_Inbox/session_log/${compact(0)}.md`] = `# 📝 Session Log ${day(0
 3社のうち2社の数字がそろった。佐藤さんの返事待ち。
 `;
 
-demoVault[`00_Cockpit/jobs/done/JOB-${compact(-1)}-01_mobile-会場の比較.md`] = `---
-id: JOB-${compact(-1)}-01
+demoVault[`00_Cockpit/thinking/スマホ依頼_${compact(-1)}-51_会場の比較.md`] = `---
+summary: 駅前の会議室で決めるのがよい（10名・予約は前日まで）
+type: mobile-request
+job: JOB-${compact(-1)}-51
+created: ${day(-1)}
+---
+# 読書会の会場候補
+
+駅前の会議室にする。10名まで入り、前日まで予約できる。図書館は20名入るが2週間前の予約が要る。
+
+## 選択肢
+
+1. 駅前の会議室（推奨）
+2. 図書館の集会室
+
+## 未確認
+
+図書館の空き状況。
+`;
+
+demoVault[`00_Cockpit/jobs/done/JOB-${compact(-1)}-51_mobile-会場の比較.md`] = `---
+id: JOB-${compact(-1)}-51
 status: done
 kind: research
 actor: ACT-SEKI
@@ -269,16 +291,16 @@ prompt: |
 
   ## 依頼
   読書会の会場候補を比べて
-artifacts: ["00_Cockpit/thinking/読書会_準備_20261005.md"]
+artifacts: ["00_Cockpit/thinking/スマホ依頼_${compact(-1)}-51_会場の比較.md"]
 unknowns: 図書館の予約状況は電話でしか分からない
 finished_at: ${day(-1)}T09:31:00+09:00
 runner_hint: actions
 ---
-# JOB-${compact(-1)}-01 mobile-会場の比較
+# JOB-${compact(-1)}-51 mobile-会場の比較
 `;
 
-demoVault[`00_Cockpit/jobs/queued/JOB-${compact(0)}-01_mobile-印刷会社の候補.md`] = `---
-id: JOB-${compact(0)}-01
+demoVault[`00_Cockpit/jobs/queued/JOB-${compact(0)}-51_mobile-印刷会社の候補.md`] = `---
+id: JOB-${compact(0)}-51
 status: queued
 kind: research
 actor: ACT-SEKI
@@ -290,8 +312,9 @@ prompt: |
   ## 依頼
   小ロットに強い印刷会社をあと2社探して
 runner_hint: actions
+origin: vault-mobile（関がスマホから依頼）
 ---
-# JOB-${compact(0)}-01 mobile-印刷会社の候補
+# JOB-${compact(0)}-51 mobile-印刷会社の候補
 `;
 
 demoVault[`01_Inbox/Clips/${day(-1)}T10-00-00-000Z_demo0001.md`] = `---

@@ -165,23 +165,6 @@ export class GitHubRemote implements VaultRemote {
     return { sha: body.sha, text };
   }
 
-  /**
-   * Ask the vault's job-runner workflow to run one Job now instead of at :30.
-   * Needs "Actions: write" on the token; returns false (and changes nothing) without it.
-   */
-  async dispatchJob(jobId: string, workflow = 'job-runner.yml') {
-    const { owner, repo, branch } = this.target;
-    try {
-      const res = await this.call(`/repos/${owner}/${repo}/actions/workflows/${workflow}/dispatches`, {
-        method: 'POST',
-        body: JSON.stringify({ ref: branch, inputs: { job_id: jobId } }),
-      });
-      return res.status === 204;
-    } catch {
-      return false;
-    }
-  }
-
   async put(path: string, text: string, baseSha: string, message: string) {
     const { owner, repo, branch } = this.target;
     const res = await this.call(`/repos/${owner}/${repo}/contents/${this.path(path)}`, {

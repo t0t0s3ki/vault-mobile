@@ -71,7 +71,8 @@ export function fmDump(d: Record<string, unknown>) {
     if (Array.isArray(v)) out.push(`${k}: ${JSON.stringify(v)}`);
     else if (typeof v === 'string' && (v.includes('\n') || v.length > 80 || v.includes(': ') || /^[["{']/.test(v))) {
       out.push(`${k}: |`);
-      for (const ln of v.split('\n')) out.push('  ' + ln);
+      // proposal.py ends the frontmatter at any line that strips to "---", even inside a block.
+      for (const ln of v.split('\n')) out.push('  ' + (ln.trim() === '---' ? ln.replace('---', '- - -') : ln));
     } else if (typeof v === 'boolean') out.push(`${k}: ${v ? 'True' : 'False'}`);
     else out.push(`${k}: ${v}`);
   }
@@ -136,11 +137,17 @@ export function slugify(s: string) {
   );
 }
 
-/** Next free JOB-YYYYMMDD-NN across every status folder (jobs.py next_id()). */
+/**
+ * Next free JOB-YYYYMMDD-NN across every status folder.
+ * The phone numbers from 51 up: jobs.py next_id() counts files and takes count+1, so the PC and
+ * Actions stay below 51 unless a day has fifty Jobs, and a phone request sent later (after being
+ * offline) cannot take a number the PC already used.
+ */
+export const PHONE_FIRST = 51;
 export function nextJobId(existing: string[], day: Date) {
   const stamp = `${day.getFullYear()}${pad(day.getMonth() + 1)}${pad(day.getDate())}`;
   const used = new Set(existing.map((p) => p.match(/JOB-(\d{8})-(\d{2,})/)).filter((m) => m && m[1] === stamp).map((m) => Number(m![2])));
-  let n = used.size + 1;
+  let n = PHONE_FIRST;
   while (used.has(n)) n++;
   return `JOB-${stamp}-${pad(n)}`;
 }
@@ -148,24 +155,36 @@ export function nextJobId(existing: string[], day: Date) {
 export function requestJob(opts: { request: string; kind: RequestKind; context?: string; now: Date; existing: string[] }) {
   const { request, kind, context, now } = opts;
   const id = nextJobId(opts.existing, now);
-  const day = id.slice(4, 12);
   const slug = slugify('mobile-' + request.split('\n')[0].slice(0, 24));
-  const out = `00_Cockpit/thinking/スマホ依頼_${day}_${slug.replace(/^mobile-/, '')}.md`;
+  // The Job ID is in the file name: two same-day requests that start alike must not share an output.
+  const out = `00_Cockpit/thinking/スマホ依頼_${id.slice(4)}_${slug.replace(/^mobile-/, '')}.md`;
   const what = kind === 'research' ? '調べて、答えと根拠をまとめる' : 'レビューできる下書きを作る';
   const prompt = [
-    `関が移動中にスマホ（vault-mobile）から頼んだ。${what}。`,
+    `関が移動中にスマホ（vault-mobile）から頼んだ。${what}。関は降りる前にスマホでこれを読む。`,
     '',
     '## 依頼',
     request.trim(),
-    ...(context ? ['', '## この依頼が出た場所', context.trim()] : []),
+    ...(context ? ['', '## この依頼が出た場所（関が見ていた行）', context.trim()] : []),
     '',
-    '## 進め方',
-    `- 結果は ${out} に新規で書く（既存ノートは書き換えない）`,
-    '- 冒頭3行で結論。関は移動中にスマホで読むので、短く、見出しで区切る',
-    '- 根拠は Vault のパス（`path:行`）か URL で示す。推測は推測と書く',
-    '- 確かめられなかったことは「## 未確認」に書く（無ければ「無い」と書く）',
-    '- 外部への送信・発言・PR作成はしない。判断が要る点は結果に「関に聞くこと」として残す',
-    '- 文体は .claude/rules/prose.md に従う',
+    '## この実行でできること・できないこと',
+    '- 見られるのは Vault の中だけ。Slack・カレンダー・メール・Web 検索は見られない',
+    '- URL の中身が要るときは `python3 07_System/scripts/grab.py "<URL>"` で取る。取れなかったものは未確認に書く',
+    '- 外部への送信・発言・PR作成・既存ノートの書き換えはしない',
+    '',
+    '## 読む順番',
+    '1. 依頼の文と、上の「関が見ていた行」（あれば）',
+    '2. その行の下の補足行と、行の中のリンク先ノート',
+    '3. 直近7日の `AI_Inbox/session_log/`（依頼の語で Grep）',
+    '4. 関連ノート（`04_Think/`・`02_Projects/`・`03_Work/` を語で Grep）',
+    '',
+    '## 書き方',
+    `- 結果は ${out} に新規で1枚だけ書く`,
+    '- 先頭に frontmatter を置き、`summary:` に40字以内の結論を書く（スマホのカードにそのまま出る）。ほかに `type: mobile-request`・`job: ' + id + '`・`created:` を入れる',
+    '- 本文の最初に結論を3行で。次の一手は1つに決めつけず、2〜3の選択肢と、ぼくの推奨1つを理由つきで',
+    '- 関に聞くことがあれば最大1点だけ',
+    '- 根拠は `path:行` か URL。推測は推測と書く',
+    '- 確かめられなかったことは `## 未確認` に書く（無ければ「無い」）',
+    '- 文体：自分の文は `.claude/rules/prose.md`。関の名前で出す文面の下書きは `.agents/skills/reply/SKILL.md` の Voice Profile と `Voice/tone-guide.md` に合わせる',
   ].join('\n');
   const meta: Record<string, unknown> = {
     id,
@@ -177,8 +196,8 @@ export function requestJob(opts: { request: string; kind: RequestKind; context?:
     prompt,
     inputs: [],
     write_scope: ['00_Cockpit/jobs/**', out],
-    done_when: `${out} が存在し、依頼への答え（結論）・根拠・未確認を含む`,
-    verify: `F="${out}"; test -f "$F" && grep -q "未確認" "$F"`,
+    done_when: `${out} が存在し、frontmatter の summary（40字の結論）・選択肢と推奨・根拠・未確認を含む`,
+    verify: `F="${out}"; test -f "$F" && grep -q "^summary:" "$F" && grep -q "未確認" "$F"`,
     budget_turns: 25,
     origin: 'vault-mobile（関がスマホから依頼）',
     attempts: 0,

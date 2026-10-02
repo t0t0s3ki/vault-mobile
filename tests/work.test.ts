@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { applyToggle, buttons, parseTasks, promisesDue, setTaskDone } from '../src/core/tasks.ts';
+import { applyToggle, buttons, latestNote, parseTasks, promisesDue, replaceLine, setTaskDone, thisWeek } from '../src/core/tasks.ts';
+import { askOf, profileUrl, readMembers, slackDomain } from '../src/core/people.ts';
+import { pickButtons } from '../src/ui/now.tsx';
 import { fmDump, fmParse, nextJobId, readJob, requestJob, slugify } from '../src/core/jobs.ts';
 import { clipIdentity, findUrl, newClip, readClip } from '../src/core/clips.ts';
 import { toggleTaskLine } from '../src/core/writes.ts';
@@ -105,7 +107,7 @@ test('同時に別エージェントが Tasks.md を書いても、その変更�
   const line = '- [ ] 🔘 🏢 田中さんの1on1枠を取り直す（5分）';
   remote.inject('conflict-race');
   const r = await toggleTaskLine(remote, vault, '00_Cockpit/Tasks.md', line, true, '2026-10-03');
-  assert.deepEqual(r, { ok: true });
+  assert.equal(r.ok, true);
   const now = remote.peek('00_Cockpit/Tasks.md')!;
   assert.ok(now.includes('（別の端末の追記）'), '割り込んだ追記が残る');
   assert.ok(now.includes('- [x] 🔘 🏢 田中さんの1on1枠を取り直す（5分） ✅ 2026-10-03'));
@@ -118,16 +120,18 @@ test('応答が消えても二重に書かない', async () => {
   await vault.sync();
   remote.inject('lost-response');
   const r = await toggleTaskLine(remote, vault, '00_Cockpit/Tasks.md', '- [ ] 🔘 🏢 田中さんの1on1枠を取り直す（5分）', true, '2026-10-03');
-  assert.deepEqual(r, { ok: true });
+  assert.equal(r.ok, true);
   assert.equal(remote.commits.length, 1);
 });
 
 test('Job：jobs.py と同じ形で書き、ID は全状態のフォルダで重ならない', () => {
   const existing = ['00_Cockpit/jobs/done/JOB-20261003-01_a.md', '00_Cockpit/jobs/failed/JOB-20261003-02_b.md', '00_Cockpit/jobs/done/JOB-20261002-05_c.md'];
-  assert.equal(nextJobId(existing, new Date('2026-10-03T08:00:00')), 'JOB-20261003-03');
+  assert.equal(nextJobId(existing, new Date('2026-10-03T08:00:00')), 'JOB-20261003-51', 'スマホは51番から');
+  assert.equal(nextJobId([...existing, '00_Cockpit/jobs/queued/JOB-20261003-51_x.md'], new Date('2026-10-03T08:00:00')), 'JOB-20261003-52');
   const j = requestJob({ request: 'Bitly の自社リダイレクト事例を調べて', kind: 'research', now: new Date('2026-10-03T08:15:00'), existing });
-  assert.equal(j.id, 'JOB-20261003-03');
-  assert.ok(j.path.startsWith('00_Cockpit/jobs/queued/JOB-20261003-03_mobile-'));
+  assert.equal(j.id, 'JOB-20261003-51');
+  assert.ok(j.output.includes('20261003-51'), '出力ファイル名に Job ID が入る');
+  assert.ok(j.path.startsWith('00_Cockpit/jobs/queued/JOB-20261003-51_mobile-'));
   const back = readJob(j.path, j.text)!;
   assert.equal(back.status, 'queued');
   assert.equal(back.kind, 'research');
@@ -157,6 +161,9 @@ test('Job：Vault の jobs.py が使う Python の読み手で読んでも同じ
   assert.equal(py.id, j.id);
   assert.ok(py.prompt.includes('「詰め」たい: 2点'));
   assert.ok(py.verify.includes('grep -q "未確認"'));
+  assert.ok(py.verify.includes('^summary:'));
+  assert.equal(py.runner_hint, 'actions', '--- 行で frontmatter が途中で切れない');
+  assert.ok(py.write_scope);
 });
 
 test('クリップ：Atelier と同じ形で書き、貼った文から URL を拾う', () => {
@@ -172,4 +179,72 @@ test('クリップ：Atelier と同じ形で書き、貼った文から URL を�
   assert.equal(findUrl('良い記事 https://x.com/a/status/1 です'), 'https://x.com/a/status/1');
   assert.equal(findUrl('URLなし'), null);
   assert.throws(() => newClip({ url: 'javascript:alert(1)' }, new Date(), 'x'));
+});
+
+test('待ちの句は空白を含んでも、領域の絵文字か日付の印で切る（実データの形）', () => {
+  const b = parseTasks(`## 🔥 アクティブ
+- [ ] 📜 ⏸ 高橋さん・旧店舗の設定と動作確認の報告 🛒 審査のあとの連携設定
+- [ ] 📜 ⏸ 伊藤さん・次回の枠の予約 🏢 伊藤さん 勉強会 **次回を実施する** ➕ 2026-09-03
+- [ ] ⏸ 渡辺さん・山本さんからの変更依頼待ち（表記の整理） ➕ 2026-08-18
+- [ ] 📌 🏢 中村さん：手順を足す（相手ボール） ⏸ ➕ 2026-09-02
+`);
+  assert.deepEqual(
+    b.waiting.map((t) => [t.waiting, t.text, t.area]),
+    [
+      ['高橋さん・旧店舗の設定と動作確認の報告', '審査のあとの連携設定', '🛒'],
+      ['伊藤さん・次回の枠の予約', '伊藤さん 勉強会 次回を実施する', '🏢'],
+      ['渡辺さん・山本さんからの変更依頼待ち（表記の整理）', '山本さんからの変更依頼待ち（表記の整理）', ''],
+      ['相手の返事', '中村さん：手順を足す（相手ボール）', '🏢'],
+    ],
+  );
+});
+
+test('今週の約束は ⏰ 節の関の行をそのまま、補足は最新の日付の行を飾りなしで', () => {
+  const b = parseTasks(`## 🔥 アクティブ
+### ⏰ 今週〜10/8
+- [ ] 📜 🏢 山本さんに返す（📅なし）
+\t⬆️ 8/26 昇格〔Thoth〕
+\t📡 2026-10-02 確認〔Crow〕：[9/30 の連絡](https://x.slack.com/archives/C1/p1) を見た
+- [ ] 📜 ⏸ 相手・返事 💻 待っている件
+### 💻 開発
+- [ ] 📜 💻 来月のもの 📅 2026-11-01
+- [ ] 📜 💻 近いもの 📅 2026-10-05
+`);
+  const w = thisWeek(b, new Date('2026-10-03T09:00:00'));
+  assert.deepEqual(w.map((t) => t.text), ['近いもの', '山本さんに返す（📅なし）']);
+  assert.equal(latestNote(w[1].sub), '2026-10-02 確認：9/30 の連絡 を見た');
+});
+
+test('押せること：場が決まっている用件と机の作業は外す', () => {
+  const b = parseTasks(`## 🔥 アクティブ
+- [ ] 🔘 🏢 来週の定例会（10/5 月）で「古い保存方式をやめる」を相談する
+- [ ] 🔘 💻 外部ベンダー側のコードに鍵が含まれていないか確認する・約15分
+- [ ] 🔘 🛒 佐藤さんに「この案でどう？」と聞く（2分）
+`);
+  assert.deepEqual(pickButtons(b).map((t) => t.text), ['佐藤さんに「この案でどう？」と聞く（2分）']);
+});
+
+test('聞く：名前と「」の文面を拾い、名簿から Slack の宛先を引く', () => {
+  const people = readMembers('| 氏名 | 所属 | Slack ID |\n| --- | --- | --- |\n| 佐藤 太郎 | A部 | U0TEST00001 |\n| 高橋 次郎 | モール | D0TEST00002（DM） |');
+  assert.deepEqual(people.map((p) => p.id), ['U0TEST00001', 'D0TEST00002']);
+  const a = askOf('佐藤さんに「月別の件数、この案でどう？」と聞く（2分）', people)!;
+  assert.equal(a.words, '月別の件数、この案でどう？');
+  assert.equal(a.person?.id, 'U0TEST00001');
+  assert.equal(profileUrl('example', 'U0TEST00001'), 'https://example.slack.com/team/U0TEST00001');
+  assert.equal(profileUrl('example', 'D0TEST00002'), 'https://example.slack.com/archives/D0TEST00002');
+  assert.equal(slackDomain(['なし', 'see https://teamx.slack.com/archives/C1']), 'teamx');
+});
+
+test('行の置き換え：混ざった改行はそのまま、既に済んでいれば何もしない、取り消しは元の行に戻す', () => {
+  const raw = '﻿a\r\n- [ ] 🔘 押す  \nc\r\n';
+  const r = replaceLine(raw, '- [ ] 🔘 押す  ', '- [x] 🔘 押す ✅ 2026-10-03');
+  assert.ok('text' in r && r.text === '﻿a\r\n- [x] 🔘 押す ✅ 2026-10-03\nc\r\n');
+  const again = replaceLine((r as { text: string }).text, '- [ ] 🔘 押す  ', '- [x] 🔘 押す ✅ 2026-10-03');
+  assert.ok('text' in again && again.text === (r as { text: string }).text);
+  const back = replaceLine((r as { text: string }).text, '- [x] 🔘 押す ✅ 2026-10-03', '- [ ] 🔘 押す  ');
+  assert.ok('text' in back && back.text === raw, '末尾の空白まで元どおり');
+  const dupDone = '- [x] 日報 ✅ 2026-10-02\n- [x] 日報 ✅ 2026-10-03\n';
+  assert.ok('error' in replaceLine(dupDone, '- [ ] 日報', '- [x] 日報 ✅ 2026-10-03') === false);
+  assert.ok('error' in replaceLine('- [ ] 日報\n- [ ] 日報\n', '- [ ] 日報', '- [x] 日報 ✅ 2026-10-03'), '同じ行が二つなら触らない');
+  assert.ok('error' in replaceLine('- [x] 日報 ✅ 2026-10-02\n', '- [ ] 日報', '- [x] 日報 ✅ 2026-10-03'), '昨日の完了を今日の完了と見なさない');
 });

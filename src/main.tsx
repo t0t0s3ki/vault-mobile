@@ -14,6 +14,7 @@ import './styles.css';
 
 /** After this long in the background the key is dropped and the lock screen returns. */
 const RELOCK_MS = 10 * 60_000;
+const IDLE_MS = 15 * 60_000;
 
 function Nav({ active }: { active: string }) {
   const items = [
@@ -54,12 +55,21 @@ function App() {
   useEffect(() => {
     if (boot.s !== 'ready' || !boot.ws.key) return;
     let hiddenAt = 0;
+    let touchedAt = Date.now();
     const on = () => {
       if (document.hidden) hiddenAt = Date.now();
       else if (hiddenAt && Date.now() - hiddenAt > RELOCK_MS) location.reload();
     };
+    // Also drop the key when the app is left open in front without being touched.
+    const touch = () => (touchedAt = Date.now());
+    const idle = setInterval(() => !document.hidden && Date.now() - touchedAt > IDLE_MS && location.reload(), 30_000);
     document.addEventListener('visibilitychange', on);
-    return () => document.removeEventListener('visibilitychange', on);
+    for (const e of ['pointerdown', 'keydown', 'scroll'] as const) addEventListener(e, touch, { passive: true, capture: true });
+    return () => {
+      document.removeEventListener('visibilitychange', on);
+      for (const e of ['pointerdown', 'keydown', 'scroll'] as const) removeEventListener(e, touch, { capture: true });
+      clearInterval(idle);
+    };
   }, [boot]);
 
   // Refresh on launch and whenever the app comes back to the front, whatever screen is showing.
@@ -72,7 +82,8 @@ function App() {
     // sending is what 関 asked for. Edits to existing notes wait for an explicit save.
     const resend = () => {
       for (const d of ws.saves.unsaved())
-        if (d.state === 'unknown' || (d.state === 'editing' && d.baseSha === '' && d.body.trim() && isCapture(ws, d.path))) void ws.saves.save(d.path);
+        // "unknown" means 保存 was already pressed; captures were meant to be sent the moment they were made.
+        if (d.state === 'unknown' || (d.state === 'editing' && d.body.trim() && isCapture(ws, d))) void ws.saves.save(d.path);
     };
     const refresh = (launch = false) => {
       if (document.hidden && !launch) return;
@@ -138,6 +149,12 @@ function App() {
       <Toasts />
     </>
   );
+}
+
+// Never run inside someone else's frame (a meta CSP cannot set frame-ancestors).
+if (window.top !== window.self) {
+  document.body.textContent = 'このページは単独で開いてください。';
+  throw new Error('framed');
 }
 
 createRoot(document.getElementById('root')!).render(
