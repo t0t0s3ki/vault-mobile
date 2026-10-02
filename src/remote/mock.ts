@@ -106,7 +106,8 @@ export class MockRemote implements VaultRemote {
     if (fault === 'offline') throw new TransportError();
     if (fault === 'conflict-race') this.externalEdit(path, (this.peek(path) ?? '') + '\n（別の端末の追記）\n');
     const current = this.files.get(path);
-    if (!current || this.shaOf(current) !== baseSha) throw new ConflictError();
+    // An empty base means "create": it must not exist yet.
+    if (baseSha === '' ? current : !current || this.shaOf(current) !== baseSha) throw new ConflictError();
     const sha = this.write(path, text);
     this.commits.push({ path, message });
     if (fault === 'lost-response') throw new TransportError('応答が届きませんでした');

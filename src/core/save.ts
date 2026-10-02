@@ -32,6 +32,9 @@ export type SaveResult = 'saved' | 'unchanged' | 'conflict' | 'unknown' | 'auth'
 
 const SEP = '\u0000';
 
+/** A new file has the empty base: it is "still at base" while it does not exist. */
+const atBase = (latest: { sha: string } | null, base: string) => (latest ? latest.sha === base : base === '');
+
 export class SaveCoordinator {
   private sessions = new Map<string, Draft>();
   private persisted = new Map<string, boolean>();
@@ -227,7 +230,7 @@ export class SaveCoordinator {
       await this.confirm(d, p.body, latest.sha);
       return 'continue';
     }
-    if (latest && latest.sha === p.baseSha) {
+    if (atBase(latest, p.baseSha)) {
       d.pending = undefined;
       d.state = 'editing';
       return 'continue';
@@ -281,7 +284,7 @@ export class SaveCoordinator {
             return 'unknown';
           }
           // The branch head moved but this file did not: the swap is still safe to retry once.
-          if (latest && latest.sha === base && attempt === 0) continue;
+          if (atBase(latest, base) && attempt === 0) continue;
           if (latest && latest.text === raw) {
             await this.confirm(d, sent, latest.sha);
             return 'saved';

@@ -10,7 +10,11 @@ import { MockRemote } from './remote/mock';
 import type { VaultRemote } from './remote/types';
 
 /** Everything that differs per person. Kept sealed on the device, never in the code. */
-export type Config = { owner: string; repo: string; branch: string; token: string; projects: string };
+export type Config = { owner: string; repo: string; branch: string; token: string; projects: string; memos?: string };
+
+/** Where things live in this vault. Defaults follow the PARA layout this app was first built for. */
+export type Places = { projects: string; memos: string };
+export const DEFAULT_PLACES: Places = { projects: '02_Projects', memos: '01_Inbox/_uniquenote' };
 
 export type Workspace = {
   remote: VaultRemote;
@@ -18,7 +22,7 @@ export type Workspace = {
   store: Store;
   vault: Vault;
   saves: SaveCoordinator;
-  projects: string;
+  places: Places;
   /** GitHub mode only. */
   config?: Config;
   key?: Key;
@@ -49,19 +53,19 @@ export function setMode(m: 'demo' | 'github' | undefined) {
 export const plain = () => new IdbStore(DB);
 export const readLock = () => plain().get<LockRecord>('meta', 'lock');
 
-async function assemble(remote: VaultRemote, store: Store, projects: string, extra: Partial<Workspace> = {}): Promise<Workspace> {
+async function assemble(remote: VaultRemote, store: Store, places: Places, extra: Partial<Workspace> = {}): Promise<Workspace> {
   const vault = new Vault(remote, store);
   const saves = new SaveCoordinator(remote, store);
   saves.onSaved = (path, sha, raw) => void vault.applySaved(path, sha, raw);
   await vault.loadCache();
   await saves.load();
-  return { remote, store, vault, saves, projects, ...extra };
+  return { remote, store, vault, saves, places, ...extra };
 }
 
 export function openDemo() {
   const mock = new MockRemote(demoVault);
   mock.delayMs = 250;
-  return assemble(mock, new IdbStore(DEMO_DB), '02_Projects', { mock });
+  return assemble(mock, new IdbStore(DEMO_DB), DEFAULT_PLACES, { mock });
 }
 
 export function remoteFor(config: Config) {
@@ -72,7 +76,8 @@ export async function openGitHub(key: Key) {
   const store = new SealedStore(plain(), key);
   const config = await store.get<Config>('meta', 'config');
   if (!config) throw new Error('接続設定が見つかりません');
-  return assemble(remoteFor(config), store, config.projects || '02_Projects', { config, key });
+  const places = { projects: config.projects || DEFAULT_PLACES.projects, memos: config.memos || DEFAULT_PLACES.memos };
+  return assemble(remoteFor(config), store, places, { config, key });
 }
 
 export async function saveConfig(key: Key, record: LockRecord, config: Config) {
@@ -104,7 +109,8 @@ export type Route =
   | { name: 'shelf'; path: string }
   | { name: 'note'; path: string; anchor: string }
   | { name: 'edit'; path: string }
-  | { name: 'settings' };
+  | { name: 'settings' }
+  | { name: 'new' };
 
 export function parseRoute(hash: string): Route {
   const [head, ...rest] = hash.replace(/^#\/?/, '').split('/');
@@ -120,6 +126,8 @@ export function parseRoute(hash: string): Route {
     }
     case 'edit':
       return { name: 'edit', path: tail };
+    case 'new':
+      return { name: 'new' };
     case 'settings':
       return { name: 'settings' };
     default:

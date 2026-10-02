@@ -169,7 +169,8 @@ export class GitHubRemote implements VaultRemote {
     const { owner, repo, branch } = this.target;
     const res = await this.call(`/repos/${owner}/${repo}/contents/${this.path(path)}`, {
       method: 'PUT',
-      body: JSON.stringify({ message, content: utf8ToBase64(text), sha: baseSha, branch }),
+      // Without `sha` GitHub creates the file and refuses (422) if it already exists.
+      body: JSON.stringify({ message, content: utf8ToBase64(text), ...(baseSha ? { sha: baseSha } : {}), branch }),
     });
     // 409: the file (or the branch head) moved. 404: the file is gone. 422 is a conflict only when the sha does not match.
     if (res.status === 409 || res.status === 404) throw new ConflictError();

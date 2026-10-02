@@ -1,5 +1,5 @@
 import type { RemoteEntry, VaultRemote } from '../remote/types';
-import { basename, noteMeta, outgoing, parseLink, type NoteMeta } from './note';
+import { basename, META_VERSION, noteMeta, outgoing, parseLink, type NoteMeta } from './note';
 import type { Store } from './storage';
 
 /** `meta` is derived from `raw` and cached so opening the app does not re-parse every note. */
@@ -119,7 +119,7 @@ export class Vault {
       m.set(k, [...(m.get(k) ?? []), path]);
     };
     for (const [path, v] of this.notes) {
-      const meta = v.meta?.path === path ? v.meta : noteMeta(path, v.raw);
+      const meta = v.meta?.path === path && v.meta.v === META_VERSION ? v.meta : noteMeta(path, v.raw);
       this.metas.set(path, meta);
       add(this.byName, meta.name, path);
       meta.aliases.forEach((a) => add(this.byAlias, a, path));
@@ -136,8 +136,7 @@ export class Vault {
   async applySaved(path: string, sha: string, raw: string) {
     const v = { sha, raw, meta: noteMeta(path, raw) };
     this.notes.set(path, v);
-    const e = this.entries.get(path);
-    if (e) this.entries.set(path, { ...e, sha, size: raw.length });
+    this.entries.set(path, { path, sha, size: raw.length });
     await this.store.put('notes', this.k(path), v);
     this.rebuild();
   }
@@ -261,10 +260,19 @@ export class Vault {
       .slice(0, limit);
   }
 
-  recent(limit = 12) {
+  /** Newest first by declared or file-name date. Logs and procedure-owned files stay out of the way. */
+  recent(limit = 12, exclude: string[] = []) {
     return [...this.metas.values()]
-      .filter((m) => m.updated && writable(m.path) && !m.path.startsWith('AI_Inbox/'))
+      .filter((m) => m.updated && writable(m.path) && !m.path.startsWith('AI_Inbox/') && !exclude.some((x) => m.path.startsWith(x + '/')))
       .sort((a, b) => b.updated.localeCompare(a.updated))
+      .slice(0, limit);
+  }
+
+  /** Notes directly in one folder, newest first. */
+  latestIn(folder: string, limit = 5) {
+    return [...this.metas.values()]
+      .filter((m) => m.folder === folder && !m.name.startsWith('_') && m.chars > 0)
+      .sort((a, b) => b.updated.localeCompare(a.updated) || b.name.localeCompare(a.name))
       .slice(0, limit);
   }
 

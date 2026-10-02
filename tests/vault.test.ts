@@ -56,7 +56,7 @@ test('埋め込み画像をファイル名で解決する', async () => {
 test('被リンク', async () => {
   const { vault } = await setup();
   const from = vault.backlinks('04_Think/余白の設計.md').map((m) => m.path).sort();
-  assert.deepEqual(from, ['02_Projects/1001_試作アプリ/README.md', '02_Projects/1002_読書会/議事録_20261001.md', '04_Think/読み心地.md']);
+  assert.deepEqual(from, ['00_Cockpit/thinking/読書会_準備_20261005.md', '02_Projects/1001_試作アプリ/README.md', '02_Projects/1002_読書会/議事録_20261001.md', '04_Think/読み心地.md']);
 });
 
 test('検索：タイトル・別名を本文より上に出す', async () => {
@@ -82,7 +82,8 @@ test('壊れたYAMLは本文を読めて、エラーとして知らせる', () =
 
 test('最近更新とフォルダ', async () => {
   const { vault } = await setup();
-  assert.equal(vault.recent()[0].path, '02_Projects/1001_試作アプリ/README.md');
+  assert.equal(vault.recent(5, ['01_Inbox/_uniquenote'])[0].path, '02_Projects/1001_試作アプリ/README.md');
+  assert.equal(vault.latestIn('01_Inbox/_uniquenote')[0].path, '01_Inbox/_uniquenote/202610020812.md');
   assert.deepEqual(
     vault.folder('02_Projects').folders.map((f) => f.name),
     ['1001_試作アプリ', '1002_読書会'],

@@ -260,3 +260,38 @@ test('版の不一致以外の拒否は競合にせず、下書きを残す', as
   assert.equal(saves.view('a.md')!.state, 'editing');
   assert.equal(saves.view('a.md')!.dirty, true);
 });
+
+test('新規作成：無いファイルを作り、同名が先にあれば上書きせず競合にする', async () => {
+  const { remote, saves } = await setup();
+  saves.begin('01_Inbox/_uniquenote/202610031200.md', { sha: '', raw: '' });
+  assert.equal(await saves.save('01_Inbox/_uniquenote/202610031200.md'), 'unchanged', '空のままなら作らない');
+  await saves.edit('01_Inbox/_uniquenote/202610031200.md', 'バスで思いついた\n');
+  assert.equal(await saves.save('01_Inbox/_uniquenote/202610031200.md'), 'saved');
+  assert.equal(remote.peek('01_Inbox/_uniquenote/202610031200.md'), 'バスで思いついた\n');
+
+  remote.externalEdit('x.md', '先に作られた');
+  saves.begin('x.md', { sha: '', raw: '' });
+  await saves.edit('x.md', '手元');
+  assert.equal(await saves.save('x.md'), 'conflict');
+  assert.equal(remote.peek('x.md'), '先に作られた');
+});
+
+test('新規作成の応答消失：再試行で、届いていれば作り直さない', async () => {
+  const { remote, saves } = await setup();
+  saves.begin('n.md', { sha: '', raw: '' });
+  await saves.edit('n.md', 'メモ');
+  remote.inject('lost-response');
+  assert.equal(await saves.save('n.md'), 'unknown');
+  assert.equal(await saves.save('n.md'), 'saved');
+  assert.equal(remote.commits.length, 1);
+});
+
+test('新規作成の通信断：届いていなければ作る', async () => {
+  const { remote, saves } = await setup();
+  saves.begin('n.md', { sha: '', raw: '' });
+  await saves.edit('n.md', 'メモ');
+  remote.inject('offline');
+  assert.equal(await saves.save('n.md'), 'unknown');
+  assert.equal(await saves.save('n.md'), 'saved');
+  assert.equal(remote.peek('n.md'), 'メモ');
+});
