@@ -29,14 +29,11 @@ export function Setup({ onReady }: { onReady: (ws: Workspace) => void }) {
 
   const check = () =>
     run(async () => {
-      const { entries } = await remoteFor(config)
-        .tree()
-        .catch((e: unknown) => {
-          const m = msg(e);
-          if (/認証|権限/.test(m)) throw new Error('トークンが通りませんでした。期限・対象リポジトリ・Contents の権限を確かめてください');
-          if (/404/.test(m)) throw new Error('リポジトリかブランチが見つかりません。名前と、トークンの対象リポジトリを確かめてください');
-          throw e;
-        });
+      const remote = remoteFor(config);
+      const { entries } = await remote.tree().catch(async (e: unknown) => {
+        // Say which part failed: the token, the repository, the branch or the permission.
+        throw new Error(await remote.diagnose().catch(() => msg(e)));
+      });
       setChecked(`つながりました。Markdown ${entries.filter((e) => e.path.endsWith('.md')).length} 本`);
     });
 
