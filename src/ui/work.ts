@@ -81,8 +81,11 @@ export function useClips(ws: Workspace) {
 /* ——— capture: everything goes through the save coordinator, so it survives no signal ——— */
 
 /** Only drafts made by a one-tap capture are re-sent on their own (a memo typed in the editor waits for 保存). */
-export function isCapture(_ws: Workspace, d: { capture?: boolean }) {
-  return !!d.capture;
+export function isCapture(_ws: Workspace, d: { capture?: boolean; baseSha: string; path: string }) {
+  if (d.capture) return true;
+  // Drafts from the first builds had no flag. Clips and requests are only ever made by a capture;
+  // memos are left out because the editor also starts new memos with an empty base.
+  return d.baseSha === '' && (d.path.startsWith(CLIPS + '/') || d.path.startsWith('00_Cockpit/jobs/queued/'));
 }
 
 async function create(ws: Workspace, path: string, text: string) {

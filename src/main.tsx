@@ -59,15 +59,19 @@ function App() {
     const on = () => {
       if (document.hidden) hiddenAt = Date.now();
       else if (hiddenAt && Date.now() - hiddenAt > RELOCK_MS) location.reload();
+      // Coming back counts as activity; the idle clock covers time spent in front only.
+      else touchedAt = Date.now();
     };
     // Also drop the key when the app is left open in front without being touched.
     const touch = () => (touchedAt = Date.now());
     const idle = setInterval(() => !document.hidden && Date.now() - touchedAt > IDLE_MS && location.reload(), 30_000);
+    // input/composition cover dictation and IME, which may not fire keydown.
+    const events = ['pointerdown', 'keydown', 'scroll', 'input', 'compositionupdate', 'touchstart'] as const;
     document.addEventListener('visibilitychange', on);
-    for (const e of ['pointerdown', 'keydown', 'scroll'] as const) addEventListener(e, touch, { passive: true, capture: true });
+    for (const e of events) addEventListener(e, touch, { passive: true, capture: true });
     return () => {
       document.removeEventListener('visibilitychange', on);
-      for (const e of ['pointerdown', 'keydown', 'scroll'] as const) removeEventListener(e, touch, { capture: true });
+      for (const e of events) removeEventListener(e, touch, { capture: true });
       clearInterval(idle);
     };
   }, [boot]);

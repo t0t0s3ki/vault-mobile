@@ -34,7 +34,7 @@ const DATE = '(\\d{4}-\\d{2}-\\d{2})';
  * "⏸ 相手・待っているもの" runs until the area emoji or a date marker. Real lines put spaces
  * inside it ("⏸ 伊藤さん・次回の枠の予約 🏢 …"), and some have no area emoji at all.
  */
-const WAIT = /⏸\s*([^🛒🏢💻🏠💰📦🎯🌐🗂🧩📊📅⏳➕✅]*)/u;
+const WAIT = /⏸\s*([^🛒🏢💻🏠💰📦🎯🌐🗂🧩📊📅⏳➕✅🤖❓🔁🛫]*)/u;
 
 /** Readable text of a task line: markers and bookkeeping dates removed, emphasis unwrapped. */
 export function cleanTask(s: string) {
@@ -64,17 +64,24 @@ function areaOf(s: string) {
 }
 
 /** Newest dated progress note under a task, without emoji, signature or link markup. */
-export function latestNote(sub: string[]) {
+export function latestNote(sub: string[], today = new Date()) {
+  const now = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
   const dated = sub
     .map((s, i) => {
       const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-      const md = s.match(/(?:^|\s)(\d{1,2})\/(\d{1,2})(?:\D|$)/);
-      const key = iso ? `${iso[1]}${iso[2]}${iso[3]}` : md ? `9999${md[1].padStart(2, '0')}${md[2].padStart(2, '0')}` : '';
+      // M/D at the start of a note (" 9/30 返事あり"), not a ratio inside one ("2/3 完了" mid-line is rare but "2/3" alone is not a date).
+      const md = s.match(/^[^\p{L}\p{N}]*(\d{1,2})\/(\d{1,2})(?![\d/])/u);
+      let key = '';
+      if (iso) key = `${iso[1]}${iso[2]}${iso[3]}`;
+      else if (md && Number(md[1]) <= 12 && Number(md[2]) <= 31) {
+        const mmdd = md[1].padStart(2, '0') + md[2].padStart(2, '0');
+        // Year is not written: a date that would land in the future belongs to last year.
+        key = (`${today.getFullYear()}${mmdd}` > now ? today.getFullYear() - 1 : today.getFullYear()) + mmdd;
+      }
       return { s, i, key };
     })
     .filter((x) => x.key);
-  // ISO dates carry the year; M/D notes are assumed this year and rank after ISO of the same day.
-  const pick = dated.sort((a, b) => b.key.replace(/^9999/, String(new Date().getFullYear())).localeCompare(a.key.replace(/^9999/, String(new Date().getFullYear()))) || b.i - a.i)[0];
+  const pick = dated.sort((a, b) => b.key.localeCompare(a.key) || b.i - a.i)[0];
   const s = pick?.s ?? sub.find((x) => !/^\[\[[^\]]+\]\]$/.test(x));
   if (!s) return '';
   return s

@@ -216,8 +216,10 @@ export function Home({ ws }: { ws: Workspace }) {
  * (not localStorage, which any page on the same origin could read).
  */
 let recentQueries: string[] | null = null;
+let recentFor = '';
 function useQueries(ws: Workspace) {
   const key = ws.remote.id + '\u0000queries';
+  if (recentFor !== key) (recentQueries = null), (recentFor = key);
   const [list, setList] = useState<string[]>(recentQueries ?? []);
   useEffect(() => {
     try {
