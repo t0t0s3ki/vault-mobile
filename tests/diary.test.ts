@@ -15,17 +15,17 @@ updated: 2026-10-03
 
 # 🌿 原料 2026-10
 
-書き方は [[08_Life/09_日記/_原料/README|README]]。関の言葉のまま、要約せずに置く。
+書き方は [[08_Life/09_日記/_原料/README|README]]。言葉のまま、要約せずに置く。
 
 ## 2026-10-03
 
-- 🫙 「PMOは俺がさぼってるな～。」
+- 🍳 朝の味噌汁がうまかった
 `;
 
 test('日記：今日の見出しの最後に、言葉のまま1行で足す', () => {
   const d = new Date('2026-10-03T21:00:00');
-  const out = addToDiary(MONTH, d, diaryLine('バスで聴いた曲が\nよかった', '🎵'));
-  assert.ok(out.endsWith('- 🫙 「PMOは俺がさぼってるな～。」\n- 🎵 バスで聴いた曲が よかった\n'));
+  const out = addToDiary(MONTH, d, diaryLine('帰りに聴いた曲が\nよかった', '🎵'));
+  assert.ok(out.endsWith('- 🍳 朝の味噌汁がうまかった\n- 🎵 帰りに聴いた曲が よかった\n'));
   assert.equal(out.split('## 2026-10-03').length - 1, 1);
 });
 

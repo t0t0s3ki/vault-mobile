@@ -7,7 +7,7 @@ import { toast } from './kit';
 import { captureJob } from './work';
 
 /**
- * A note Thoth wrote back for a phone request. Decided by where it is, not by what it says about
+ * A note the agent wrote back for a phone request. Decided by where it is, not by what it says about
  * itself: any note could claim `type: mobile-request` to get a reply box.
  */
 export function isResult(path: string, raw: string) {
@@ -21,18 +21,18 @@ function stamp() {
 }
 
 /**
- * 関's answer to a result, kept in the result itself so the next agent (a chat session or the
+ * The owner's answer to a result, kept in the result itself so the next agent (a chat session or the
  * morning run) finds it where the work is. "直して" also queues the next request.
  */
 export function Reply({ ws, path }: { ws: Workspace; path: string }) {
   const [mode, setMode] = useState<'idle' | 'fix'>('idle');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const replied = /## 関の返事/.test(ws.vault.note(path)?.raw ?? '');
+  const replied = /^## .+の返事（スマホ/m.test(ws.vault.note(path)?.raw ?? '');
 
   const write = async (verdict: string, extra = '') => {
     setBusy(true);
-    const block = `## 関の返事（スマホ・${stamp()}）\n\n- ${verdict}${text.trim() ? '：' + text.trim().replace(/\n+/g, ' ') : ''}${extra}`;
+    const block = `## ${ws.names.me}の返事（スマホ・${stamp()}）\n\n- ${verdict}${text.trim() ? '：' + text.trim().replace(/\n+/g, ' ') : ''}${extra}`;
     const r = await appendRemote(ws.remote, ws.vault, path, block, `mobile: 返事 ${path}`);
     setBusy(false);
     if (r.ok) {
@@ -44,7 +44,7 @@ export function Reply({ ws, path }: { ws: Workspace; path: string }) {
 
   const go = async () => {
     const r = await write('これで進めて');
-    toast(r.ok ? '返しました。次に動くトトが拾います' : r.reason, r.ok ? 'ok' : 'bad');
+    toast(r.ok ? `返しました。次に動く${ws.names.agent}が拾います` : r.reason, r.ok ? 'ok' : 'bad');
   };
   const later = async () => {
     const r = await write('あとで');
@@ -57,12 +57,12 @@ export function Reply({ ws, path }: { ws: Workspace; path: string }) {
     setBusy(false);
     if (r !== 'saved') return toast('電波が戻ったら自動で送ります', 'bad');
     const w = await write('直してほしい', `（→ ${id}）`);
-    toast(w.ok ? 'トトに直しを頼みました' : 'トトには頼みました。返事の書き込みは失敗しました', w.ok ? 'ok' : 'bad');
+    toast(w.ok ? `${ws.names.agent}に直しを頼みました` : `${ws.names.agent}には頼みました。返事の書き込みは失敗しました`, w.ok ? 'ok' : 'bad');
   };
 
   return (
     <section className="reply">
-      <h2 className="label">トトへの返事</h2>
+      <h2 className="label">{ws.names.agent}への返事</h2>
       <p>{replied ? 'もう返事をしています。重ねて返すこともできます。' : 'このノートの末尾に書き足します。次に動くトトが拾います。'}</p>
       {mode === 'fix' ? (
         <>

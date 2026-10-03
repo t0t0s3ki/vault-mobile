@@ -265,9 +265,9 @@ test('新規作成：無いファイルを作り、同名が先にあれば上�
   const { remote, saves } = await setup();
   saves.begin('01_Inbox/_uniquenote/202610031200.md', { sha: '', raw: '' });
   assert.equal(await saves.save('01_Inbox/_uniquenote/202610031200.md'), 'unchanged', '空のままなら作らない');
-  await saves.edit('01_Inbox/_uniquenote/202610031200.md', 'バスで思いついた\n');
+  await saves.edit('01_Inbox/_uniquenote/202610031200.md', '歩きながら思いついた\n');
   assert.equal(await saves.save('01_Inbox/_uniquenote/202610031200.md'), 'saved');
-  assert.equal(remote.peek('01_Inbox/_uniquenote/202610031200.md'), 'バスで思いついた\n');
+  assert.equal(remote.peek('01_Inbox/_uniquenote/202610031200.md'), '歩きながら思いついた\n');
 
   remote.externalEdit('x.md', '先に作られた');
   saves.begin('x.md', { sha: '', raw: '' });

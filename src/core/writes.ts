@@ -43,7 +43,7 @@ export async function replaceRemoteLine(remote: VaultRemote, vault: Vault, path:
 }
 
 /**
- * Add text at the end of whatever the file holds now (e.g. 関's reply under a result note).
+ * Add text at the end of whatever the file holds now (e.g. the owner's reply under a result note).
  * Same discipline as line replace: start from the latest version, retry on conflict,
  * and on an unknown outcome check whether the text already landed before sending again.
  */

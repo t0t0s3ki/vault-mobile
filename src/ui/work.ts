@@ -36,7 +36,7 @@ export type LogEntry = { path: string; title: string; who: string; anchor: strin
 
 const ymd = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 
-/** Section headings agents signed in today's (or the latest) session log: what moved while 関 was away. */
+/** Section headings agents signed in today's (or the latest) session log: what moved while the owner was away. */
 export function useActivity(ws: Workspace, limit = 6) {
   const v = useVersion(ws.vault);
   return useMemo(() => {
@@ -145,7 +145,7 @@ export async function captureJob(ws: Workspace, request: string, kind: RequestKi
     /* offline: numbered from the device copy, re-checked when it is sent */
   }
   for (let attempt = 0; attempt < 3; attempt++) {
-    const j = requestJob({ request, kind, context, now: new Date(), existing });
+    const j = requestJob({ request, kind, context, now: new Date(), existing, me: ws.names.me });
     const r = await create(ws, j.path, j.text);
     // Same ID made elsewhere (PC, Actions) in the meantime: take the next number, never overwrite.
     if (r === 'conflict') {

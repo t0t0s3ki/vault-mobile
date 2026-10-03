@@ -99,7 +99,7 @@ function App() {
     const { vault } = ws;
     let running = false;
     // Captures (memo / clip / request) that could not be sent are sent as soon as possible:
-    // sending is what 関 asked for. Edits to existing notes wait for an explicit save.
+    // sending is what was asked for. Edits to existing notes wait for an explicit save.
     const resend = () => {
       for (const d of ws.saves.unsaved())
         // "unknown" means 保存 was already pressed; captures were meant to be sent the moment they were made.

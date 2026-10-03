@@ -1,6 +1,6 @@
 /**
  * The diary's raw material (08_Life/09_日記/_原料/README.md): one file per month, a
- * "## YYYY-MM-DD" heading per day, and one line per entry in 関's own words with a
+ * "## YYYY-MM-DD" heading per day, and one line per entry in the owner's own words with a
  * category emoji in front. Nothing is summarised or reworded here.
  */
 export const DIARY_DIR = '08_Life/09_日記/_原料';
@@ -29,7 +29,7 @@ export function dayOf(d: Date) {
 /** A fresh month file, shaped like the existing ones. */
 export function newMonth(d: Date) {
   const day = dayOf(d);
-  return `---\ntype: note\ntags: [life/日記]\ncreated: ${day}\nupdated: ${day}\n---\n\n# 🌿 原料 ${day.slice(0, 7)}\n\n書き方は [[08_Life/09_日記/_原料/README|README]]。関の言葉のまま、要約せずに置く。\n`;
+  return `---\ntype: note\ntags: [life/日記]\ncreated: ${day}\nupdated: ${day}\n---\n\n# 🌿 原料 ${day.slice(0, 7)}\n\n書き方は [[08_Life/09_日記/_原料/README|README]]。言葉のまま、要約せずに置く。\n`;
 }
 
 /** One entry line: the words as given, kept on one line (line breaks become spaces). */

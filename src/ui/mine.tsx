@@ -7,7 +7,7 @@ import { useClips, useJobs } from './work';
 
 const STATE: Record<string, string> = { queued: '順番待ち', running: '進めています', done: 'できた', failed: '止まった', vetoed: '止めた' };
 
-/** Everything that is 関's own: what he threw in, what he asked for, what he was reading, what he pinned. */
+/** Everything that is the owner's own: what was thrown in, asked for, being read, pinned. */
 export function Mine({ ws }: { ws: Workspace }) {
   const v = useVersion(ws.vault);
   const positions = usePositions(ws, v);
@@ -53,7 +53,7 @@ export function Mine({ ws }: { ws: Workspace }) {
             );
           })
         ) : (
-          <p className="quiet">まだありません。下の ＋ から「トトに頼む」で渡せます。</p>
+          <p className="quiet">まだありません。下の ＋ から「{ws.names.agent}に頼む」で渡せます。</p>
         )}
       </section>
 
@@ -77,7 +77,7 @@ export function Mine({ ws }: { ws: Workspace }) {
                 <span className="row-title">{c.title}</span>
                 <span className="row-meta">
                   <span className="chip">{c.host}</span>
-                  {c.processed ? 'トトが読んだ' : 'まだリンクだけ'}
+                  {c.processed ? `${ws.names.agent}が読んだ` : 'まだリンクだけ'}
                 </span>
               </span>
             </a>

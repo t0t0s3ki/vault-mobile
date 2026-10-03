@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type TouchEvent as RTouchEvent } from 'react';
-import { href, remoteFor, setMode, useVersion, wipeDevice, type Position, type Workspace } from '../app';
+import { DEFAULT_NAMES, href, remoteFor, setMode, useVersion, wipeDevice, type Position, type Workspace } from '../app';
 import { splitFrontmatter, type NoteMeta } from '../core/note';
 import { toEditable } from '../core/text';
 import { writable } from '../core/vault';
@@ -577,6 +577,35 @@ function TokenSwap({ ws }: { ws: Workspace }) {
   );
 }
 
+/** Names live on the device (sealed with the config). The published app only has neutral defaults. */
+function NamesEdit({ ws }: { ws: Workspace }) {
+  const [me, setMe] = useState(ws.config?.names?.me ?? '');
+  const [agent, setAgent] = useState(ws.config?.names?.agent ?? '');
+  if (!ws.config) return null;
+  const save = async () => {
+    await ws.store.put('meta', 'config', { ...ws.config!, names: { me: me.trim(), agent: agent.trim() } });
+    toast('保存しました。開き直します', 'ok');
+    setTimeout(() => location.reload(), 600);
+  };
+  return (
+    <details className="group-item">
+      <summary>呼び名（{ws.names.me} ／ {ws.names.agent}）</summary>
+      <p className="quiet">画面の文言と、Vault に書く返事の見出しに使います。この端末にだけ保存します。</p>
+      <label className="field">
+        自分の名前
+        <input className="text" value={me} onChange={(e) => setMe(e.target.value)} placeholder={DEFAULT_NAMES.me} />
+      </label>
+      <label className="field">
+        エージェントの名前
+        <input className="text" value={agent} onChange={(e) => setAgent(e.target.value)} placeholder={DEFAULT_NAMES.agent} />
+      </label>
+      <button className="btn" onClick={save}>
+        保存
+      </button>
+    </details>
+  );
+}
+
 function PlacesEdit({ ws }: { ws: Workspace }) {
   const [projects, setProjects] = useState(ws.places.projects);
   const [memos, setMemos] = useState(ws.places.memos);
@@ -639,6 +668,7 @@ export function Settings({ ws, onReset }: { ws: Workspace; onReset: () => void }
             <SyncButton ws={ws} compact />
           </div>
           {!mock && <PlacesEdit ws={ws} />}
+          {!mock && <NamesEdit ws={ws} />}
         </div>
       </section>
 

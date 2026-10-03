@@ -10,7 +10,14 @@ import { MockRemote } from './remote/mock';
 import type { VaultRemote } from './remote/types';
 
 /** Everything that differs per person. Kept sealed on the device, never in the code. */
-export type Config = { owner: string; repo: string; branch: string; token: string; projects: string; memos?: string };
+export type Config = { owner: string; repo: string; branch: string; token: string; projects: string; memos?: string; names?: Partial<Names> };
+
+/**
+ * What to call the person and the agent. Kept on the device (sealed with the config), never in the code:
+ * the published app carries only these neutral defaults.
+ */
+export type Names = { me: string; agent: string };
+export const DEFAULT_NAMES: Names = { me: '持ち主', agent: 'エージェント' };
 
 /** Where things live in this vault. Defaults follow the PARA layout this app was first built for. */
 export type Places = { projects: string; memos: string };
@@ -23,6 +30,7 @@ export type Workspace = {
   vault: Vault;
   saves: SaveCoordinator;
   places: Places;
+  names: Names;
   /** GitHub mode only. */
   config?: Config;
   key?: Key;
@@ -53,13 +61,13 @@ export function setMode(m: 'demo' | 'github' | undefined) {
 export const plain = () => new IdbStore(DB);
 export const readLock = () => plain().get<LockRecord>('meta', 'lock');
 
-async function assemble(remote: VaultRemote, store: Store, places: Places, extra: Partial<Workspace> = {}): Promise<Workspace> {
+async function assemble(remote: VaultRemote, store: Store, places: Places, extra: Partial<Workspace> & { names?: Names } = {}): Promise<Workspace> {
   const vault = new Vault(remote, store);
   const saves = new SaveCoordinator(remote, store);
   saves.onSaved = (path, sha, raw) => void vault.applySaved(path, sha, raw);
   await vault.loadCache();
   await saves.load();
-  return { remote, store, vault, saves, places, ...extra };
+  return { remote, store, vault, saves, places, names: DEFAULT_NAMES, ...extra };
 }
 
 export function openDemo() {
@@ -77,7 +85,8 @@ export async function openGitHub(key: Key) {
   const config = await store.get<Config>('meta', 'config');
   if (!config) throw new Error('接続設定が見つかりません');
   const places = { projects: config.projects || DEFAULT_PLACES.projects, memos: config.memos || DEFAULT_PLACES.memos };
-  return assemble(remoteFor(config), store, places, { config, key });
+  const names = { me: config.names?.me?.trim() || DEFAULT_NAMES.me, agent: config.names?.agent?.trim() || DEFAULT_NAMES.agent };
+  return assemble(remoteFor(config), store, places, { config, key, names });
 }
 
 export async function saveConfig(key: Key, record: LockRecord, config: Config) {

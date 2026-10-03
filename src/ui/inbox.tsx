@@ -5,7 +5,7 @@ import { Icon } from './icons';
 import { ago, toast } from './kit';
 import { captureClip, useClips } from './work';
 
-/** What 関 threw in from the phone: memos and clips. Newest first, nothing to "finish". */
+/** What the owner threw in from the phone: memos and clips. Newest first, nothing to "finish". */
 export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
   useVersion(ws.vault);
   const clips = useClips(ws);
@@ -23,7 +23,7 @@ export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
     setBusy(false);
     if (r === 'saved') {
       setUrl('');
-      toast('クリップしました。全文はトトがあとで取ります', 'ok');
+      toast(`クリップしました。全文は${ws.names.agent}があとで取ります`, 'ok');
     } else toast('この端末に保存しました。電波が戻ったら送ります', 'bad');
   };
   const paste = async () => {
@@ -71,7 +71,7 @@ export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
           ) : (
             <p className="quiet">まだありません。「いま」の入力欄から、思いついたことを書けます。</p>
           )}
-          <p className="quiet small">{ws.places.memos} に1枚ずつ残り、トトがあとで仕分けます。</p>
+          <p className="quiet small">{ws.places.memos} に1枚ずつ残り、{ws.names.agent}があとで仕分けます。</p>
         </section>
       )}
 
@@ -97,7 +97,7 @@ export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
                 {c.note && <span className="row-excerpt">{c.note}</span>}
                 <span className="row-meta">
                   <span className="chip">{c.host}</span>
-                  {c.processed ? 'トトが読んだ' : 'まだリンクだけ'} · {ago(c.created.slice(0, 19))}
+                  {c.processed ? `${ws.names.agent}が読んだ` : 'まだリンクだけ'} · {ago(c.created.slice(0, 19))}
                 </span>
               </a>
               {c.url && (

@@ -32,7 +32,7 @@ const TASKS = `# 📋 Tasks
 - [ ] 💻 配信ツールの転送先変更を依頼する・約10分
 
 ## ⚡ Spark（衝動メニュー）
-- ⚡ 関の思想総論を問答で深掘りする — [[関の思想総論]]
+- ⚡ 仕事の考え方を問答で深掘りする — [[考え方メモ]]
 \t素材は同ノート
 
 ## 🧊 アイスボックス
@@ -64,7 +64,7 @@ test('Tasks：🔥 を約束・ボタン・返事待ちに分け、🧊 は待�
     ],
   );
   assert.equal(b.sparks.length, 1);
-  assert.ok(b.sparks[0].text.startsWith('関の思想総論を問答で深掘りする'));
+  assert.ok(b.sparks[0].text.startsWith('仕事の考え方を問答で深掘りする'));
   assert.ok(!JSON.stringify(b).includes('いつか見るもの'), '🧊 の Pin は出さない');
 });
 
@@ -200,12 +200,12 @@ test('待ちの句は空白を含んでも、領域の絵文字か日付の印�
   );
 });
 
-test('今週の約束は ⏰ 節の関の行をそのまま、補足は最新の日付の行を飾りなしで', () => {
+test('今週の約束は ⏰ 節の自分の行をそのまま、補足は最新の日付の行を飾りなしで', () => {
   const b = parseTasks(`## 🔥 アクティブ
 ### ⏰ 今週〜10/8
 - [ ] 📜 🏢 山本さんに返す（📅なし）
-\t⬆️ 8/26 昇格〔Thoth〕
-\t📡 2026-10-02 確認〔Crow〕：[9/30 の連絡](https://x.slack.com/archives/C1/p1) を見た
+\t⬆️ 8/26 昇格〔エージェント〕
+\t📡 2026-10-02 確認〔エージェント〕：[9/30 の連絡](https://x.slack.com/archives/C1/p1) を見た
 - [ ] 📜 ⏸ 相手・返事 💻 待っている件
 ### 💻 開発
 - [ ] 📜 💻 来月のもの 📅 2026-11-01
@@ -268,11 +268,11 @@ test('返事：最新の末尾に足し、競合しても他の追記を消さ�
   const vault = new Vault(remote, new MemoryStore());
   await vault.sync();
   remote.inject('conflict-race');
-  const block = '## 関の返事（スマホ・2026-10-04 08:00）\n\n- これで進めて';
+  const block = '## 持ち主の返事（スマホ・2026-10-04 08:00）\n\n- これで進めて';
   assert.equal((await appendRemote(remote, vault, path, block, 'm')).ok, true);
   const now = remote.peek(path)!;
   assert.ok(now.includes('（別の端末の追記）') && now.endsWith('- これで進めて\n'));
   remote.inject('lost-response');
   await appendRemote(remote, vault, path, block, 'm');
-  assert.equal(remote.peek(path)!.split('## 関の返事').length - 1, 1, '同じ返事は一度だけ');
+  assert.equal(remote.peek(path)!.split('## 持ち主の返事').length - 1, 1, '同じ返事は一度だけ');
 });

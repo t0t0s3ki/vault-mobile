@@ -2,7 +2,7 @@
  * Reads Tasks.md the way the vault's own rule defines it (.claude/rules/tasks.md):
  *  - 🔥 holds 📜 Promises and 🔘 buttons; ⏸ marks "the other side has the ball"
  *  - ⚡ Spark is a menu, not a list to finish
- *  - 🧊 is Thoth's memory and is not shown, except its ⏸ waiting subsection
+ *  - 🧊 is the agent's memory and is not shown, except its ⏸ waiting subsection
  * Nothing here decides priority; it only sorts what the file already says.
  */
 
@@ -170,7 +170,7 @@ export function parseTasks(raw: string): TaskBoard {
   return board;
 }
 
-/** What is 関's to do next: open items in 🔥 that are not waiting on someone else and not Thoth's. */
+/** What is the owner's to do next: open items in 🔥 that are not waiting on someone else and not the agent's. */
 export function mine(board: TaskBoard) {
   return board.active.filter((t) => !t.done && !(t.agent && t.kind === 'other'));
 }
@@ -237,7 +237,7 @@ export function applyToggle(raw: string, original: string, done: boolean, today:
 }
 
 /**
- * This week's promises: the lines Thoth already placed under "### ⏰ 今週…", plus any
+ * This week's promises: the lines the agent already placed under "### ⏰ 今週…", plus any
  * promise elsewhere whose 📅 falls within the week. Order: dated first, then the file's order.
  */
 export function thisWeek(board: TaskBoard, today = new Date()) {

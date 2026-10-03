@@ -152,19 +152,21 @@ export function nextJobId(existing: string[], day: Date) {
   return `JOB-${stamp}-${pad(n)}`;
 }
 
-export function requestJob(opts: { request: string; kind: RequestKind; context?: string; now: Date; existing: string[] }) {
+export function requestJob(opts: { request: string; kind: RequestKind; context?: string; now: Date; existing: string[]; me?: string }) {
   const { request, kind, context, now } = opts;
+  // The person's name comes from the device's settings; the published code carries none.
+  const me = opts.me || '持ち主';
   const id = nextJobId(opts.existing, now);
   const slug = slugify('mobile-' + request.split('\n')[0].slice(0, 24));
   // The Job ID is in the file name: two same-day requests that start alike must not share an output.
   const out = `00_Cockpit/thinking/スマホ依頼_${id.slice(4)}_${slug.replace(/^mobile-/, '')}.md`;
   const what = kind === 'research' ? '調べて、答えと根拠をまとめる' : 'レビューできる下書きを作る';
   const prompt = [
-    `関が移動中にスマホ（vault-mobile）から頼んだ。${what}。関は降りる前にスマホでこれを読む。`,
+    `${me}が出先からスマホ（vault-mobile）で頼んだ。${what}。${me}はこれをスマホで読む。`,
     '',
     '## 依頼',
     request.trim(),
-    ...(context ? ['', '## この依頼が出た場所（関が見ていた行）', context.trim()] : []),
+    ...(context ? ['', `## この依頼が出た場所（${me}が見ていた行）`, context.trim()] : []),
     '',
     '## この実行でできること・できないこと',
     '- 見られるのは Vault の中だけ。Slack・カレンダー・メール・Web 検索は見られない',
@@ -172,7 +174,7 @@ export function requestJob(opts: { request: string; kind: RequestKind; context?:
     '- 外部への送信・発言・PR作成・既存ノートの書き換えはしない',
     '',
     '## 読む順番',
-    '1. 依頼の文と、上の「関が見ていた行」（あれば）',
+    `1. 依頼の文と、上の「${me}が見ていた行」（あれば）`,
     '2. その行の下の補足行と、行の中のリンク先ノート',
     '3. 直近7日の `AI_Inbox/session_log/`（依頼の語で Grep）',
     '4. 関連ノート（`04_Think/`・`02_Projects/`・`03_Work/` を語で Grep）',
@@ -181,16 +183,16 @@ export function requestJob(opts: { request: string; kind: RequestKind; context?:
     `- 結果は ${out} に新規で1枚だけ書く`,
     '- 先頭に frontmatter を置き、`summary:` に40字以内の結論を書く（スマホのカードにそのまま出る）。ほかに `type: mobile-request`・`job: ' + id + '`・`created:` を入れる',
     '- 本文の最初に結論を3行で。次の一手は1つに決めつけず、2〜3の選択肢と、ぼくの推奨1つを理由つきで',
-    '- 関に聞くことがあれば最大1点だけ',
+    `- ${me}に聞くことがあれば最大1点だけ`,
     '- 根拠は `path:行` か URL。推測は推測と書く',
     '- 確かめられなかったことは `## 未確認` に書く（無ければ「無い」）',
-    '- 文体：自分の文は `.claude/rules/prose.md`。関の名前で出す文面の下書きは `.agents/skills/reply/SKILL.md` の Voice Profile と `Voice/tone-guide.md` に合わせる',
+    '- 文体：自分の文は `.claude/rules/prose.md`。' + me + 'の名前で出す文面の下書きは `.agents/skills/reply/SKILL.md` の Voice Profile と `Voice/tone-guide.md` に合わせる',
   ].join('\n');
   const meta: Record<string, unknown> = {
     id,
     status: 'queued',
     kind,
-    actor: 'ACT-SEKI',
+    actor: 'ACT-MOBILE',
     created: isoJst(now),
     slug,
     prompt,
@@ -201,7 +203,7 @@ export function requestJob(opts: { request: string; kind: RequestKind; context?:
     done_when: `${out} が存在し、frontmatter の summary（40字の結論）・選択肢と推奨・根拠・未確認を含む`,
     verify: `F="${out}"; test -f "$F" && grep -q "^summary:" "$F" && grep -q "未確認" "$F"`,
     budget_turns: 25,
-    origin: 'vault-mobile（関がスマホから依頼）',
+    origin: 'vault-mobile（スマホから依頼）',
     attempts: 0,
     infra_retries: 0,
     package_id: '',
@@ -242,7 +244,7 @@ ${meta.verify}
 この Job の契約だけ。元の約束は閉じない
 
 ## 📝 実行ログ
-- ${t} queued（ACT-SEKI / origin: ${meta.origin}）
+- ${t} queued（ACT-MOBILE / origin: ${meta.origin}）
 `;
   return { id, path: `00_Cockpit/jobs/queued/${id}_${slug}.md`, output: out, text: fmDump(meta) + '\n' + body.replace(/^\n+/, '') };
 }

@@ -171,7 +171,7 @@ frontmatter が壊れていても、本文は読めて、原文はそのまま�
   '05_Knowledge/画像/表紙.svg': { bytes: new TextEncoder().encode(cover), type: 'image/svg+xml' },
   '01_Inbox/_uniquenote/202610020812.md': `## 読む気になる画面とは
 
-バスの中で開いたとき、最初に目に入るものが「続き」だと、そのまま読み始められる。
+出先で開いたとき、最初に目に入るものが「続き」だと、そのまま読み始められる。
 一覧から探させると、探しているうちに降りる駅が来る。
 `,
   '01_Inbox/_uniquenote/202610011930.md': `本質的にやるか、ハックするか
@@ -217,13 +217,13 @@ updated: ${day(0)}
 
 ### ⏰ 今週
 - [ ] 📜 🏢 読書会の会場を決めて参加者へ連絡する 📅 ${day(2)} ➕ ${day(-6)}
-\t📡 ${day(-1)} 候補は2か所。駅前の会議室は 10 名まで〔Thoth〕
+\t📡 ${day(-1)} 候補は2か所。駅前の会議室は 10 名まで〔エージェント〕
 \t[[読書会_準備_20261005|準備ノート]]
 - [ ] 📜 💻 試作アプリを読書会メンバーに見せる 📅 ${day(5)} ➕ ${day(-3)}
-\t📡 ${day(0)} ダミー Vault で動く版を公開済み〔Thoth〕
+\t📡 ${day(0)} ダミー Vault で動く版を公開済み〔エージェント〕
 - [ ] 📜 ⏸ 佐藤さん・見積もりの返事 🛒 印刷費の見積もりを比べて発注する 📅 ${day(9)}
 
-### 🔘 押すだけ（関しか押せない・各5〜15分）
+### 🔘 押すだけ（自分しか押せない・各5〜15分）
 - [ ] 🔘 🏢 田中さんの1on1枠を取り直す（5分）
 - [ ] 🔘 💻 共有ドライブの権限申請を出す・約10分
 - [ ] 🔘 🛒 モールの管理画面で配送設定を確認する（15分）
@@ -246,15 +246,15 @@ updated: ${day(0)}
 
 demoVault[`AI_Inbox/session_log/${compact(0)}.md`] = `# 📝 Session Log ${day(0)}
 
-## 読書会の会場候補を2つに絞った〔Thoth〕
+## 読書会の会場候補を2つに絞った〔エージェント〕
 
 駅前の会議室（10名）と図書館の集会室（20名・予約は2週間前まで）。
 
-## 試作アプリのダミー Vault を更新〔Technē〕
+## 試作アプリのダミー Vault を更新〔エージェント〕
 
 デモ用の Tasks・Job・クリップを足した。
 
-## 印刷費の見積もりの比較表〔Thoth〕
+## 印刷費の見積もりの比較表〔エージェント〕
 
 3社のうち2社の数字がそろった。佐藤さんの返事待ち。
 `;
@@ -283,11 +283,11 @@ demoVault[`00_Cockpit/jobs/done/JOB-${compact(-1)}-51_mobile-会場の比較.md`
 id: JOB-${compact(-1)}-51
 status: done
 kind: research
-actor: ACT-SEKI
+actor: ACT-MOBILE
 created: ${day(-1)}T08:12:00+09:00
 slug: mobile-会場の比較
 prompt: |
-  関が移動中にスマホ（vault-mobile）から頼んだ。調べて、答えと根拠をまとめる。
+  持ち主が出先からスマホ（vault-mobile）で頼んだ。調べて、答えと根拠をまとめる。
 
   ## 依頼
   読書会の会場候補を比べて
@@ -303,16 +303,16 @@ demoVault[`00_Cockpit/jobs/queued/JOB-${compact(0)}-51_mobile-印刷会社の候
 id: JOB-${compact(0)}-51
 status: queued
 kind: research
-actor: ACT-SEKI
+actor: ACT-MOBILE
 created: ${day(0)}T07:50:00+09:00
 slug: mobile-印刷会社の候補
 prompt: |
-  関が移動中にスマホ（vault-mobile）から頼んだ。調べて、答えと根拠をまとめる。
+  持ち主が出先からスマホ（vault-mobile）で頼んだ。調べて、答えと根拠をまとめる。
 
   ## 依頼
   小ロットに強い印刷会社をあと2社探して
 runner_hint: actions
-origin: vault-mobile（関がスマホから依頼）
+origin: vault-mobile（スマホから依頼）
 ---
 # JOB-${compact(0)}-51 mobile-印刷会社の候補
 `;

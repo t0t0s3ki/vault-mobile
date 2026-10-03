@@ -1,7 +1,7 @@
 /**
  * "佐藤さんに「…」と聞く" → copy the quoted wording and open that person in Slack.
  * Names and IDs come from member tables already in the vault (| 氏名 | … | Slack ID |),
- * the workspace from Slack links already in the vault. Nothing is sent; 関 sends it.
+ * the workspace from Slack links already in the vault. Nothing is sent; the owner sends it.
  */
 export type Person = { name: string; id: string };
 

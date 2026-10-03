@@ -141,7 +141,7 @@ export function TaskSheet({ ws, task, onClose }: { ws: Workspace; task: Task | n
     const ctx = [task.raw, ...task.sub.map((s) => '\t' + s)].join('\n');
     const { r } = await captureJob(ws, `この件の状況をまとめて、次の一手を2〜3の選択肢と推奨で出して：${task.text}`, 'research', ctx);
     setBusy(false);
-    toast(r === 'saved' ? 'トトに渡しました。毎時30分ごろに始めます' : '電波が戻ったら自動で送ります', r === 'saved' ? 'ok' : 'bad');
+    toast(r === 'saved' ? `${ws.names.agent}に渡しました。毎時30分ごろに始めます` : '電波が戻ったら自動で送ります', r === 'saved' ? 'ok' : 'bad');
     if (r === 'saved') onClose();
   };
   // Both must start inside the tap itself: Safari refuses clipboard and window.open after an await.
@@ -202,7 +202,7 @@ export function TaskSheet({ ws, task, onClose }: { ws: Workspace; task: Task | n
             </button>
           )}
           <button className="btn" disabled={busy} onClick={askAbout}>
-            <Icon name="send" size={18} /> トトにまとめてもらう
+            <Icon name="send" size={18} /> {ws.names.agent}にまとめてもらう
           </button>
           <button className="btn" onClick={openPlus}>
             <Icon name="plus" size={18} /> この件で投げる
@@ -318,7 +318,7 @@ export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
 
       {(results.length > 0 || asked.length > 0) && (
         <section className="block">
-          <h2 className="label">トトたち</h2>
+          <h2 className="label">{ws.names.agent}たち</h2>
           {results.map((j) => {
             const art = j.artifacts.find((a) => a.endsWith('.md') && !a.includes('/jobs/'));
             const line = resultLine(ws, art);
@@ -372,7 +372,7 @@ export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
   );
 }
 
-/** Off the home screen on purpose: other people's balls are not 関's to-do. */
+/** Off the home screen on purpose: other people's balls are not the owner's to-do. */
 export function Waiting({ ws, taskText }: { ws: Workspace; taskText: string }) {
   const board = useBoard(ws);
   const open = findTask(board, taskText);
@@ -387,7 +387,7 @@ export function Waiting({ ws, taskText }: { ws: Workspace; taskText: string }) {
           <h1>相手のボール</h1>
         </div>
       </header>
-      <p className="quiet">相手が動く番のもの。動きはトトが拾います。</p>
+      <p className="quiet">相手が動く番のもの。動きは{ws.names.agent}が拾います。</p>
       {board.waiting.map((t) => {
         const [who, ...what] = t.waiting.split('・');
         return (

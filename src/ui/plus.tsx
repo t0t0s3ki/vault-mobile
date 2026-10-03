@@ -10,7 +10,7 @@ import { captureDiary } from './diary';
 import { captureClip, captureJob, captureMemo } from './work';
 
 /**
- * What 関 is looking at right now. Screens set it; the ＋ sheet attaches it, so a thought
+ * What the owner is looking at right now. Screens set it; the ＋ sheet attaches it, so a thought
  * keeps the thing that prompted it (a memo gets "関連: [[note]]", a request gets the task line).
  */
 export type Context = { kind: 'note'; path: string; title: string } | { kind: 'task'; task: Task } | null;
@@ -90,9 +90,9 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
           : undefined;
     const { r } = await captureJob(ws, text, kind, context);
     setBusy(false);
-    r === 'saved' ? done('トトに渡しました。毎時30分ごろに始めます') : failed(r);
+    r === 'saved' ? done(`${ws.names.agent}に渡しました。毎時30分ごろに始めます`) : failed(r);
   };
-  /** The diary takes 関's words as they are: no context, no rewording. */
+  /** The diary takes the owner's words as they are: no context, no rewording. */
   const diary = async () => {
     if (!text.trim()) return area.current?.focus();
     setBusy(true);
@@ -122,7 +122,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
     setBusy(true);
     const { r } = await captureClip(ws, { url, note: note || undefined });
     setBusy(false);
-    r === 'saved' ? done('クリップしました。中身はトトがあとで読みます') : failed(r);
+    r === 'saved' ? done(`クリップしました。中身は${ws.names.agent}があとで読みます`) : failed(r);
   };
 
   return (
@@ -139,7 +139,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
           ref={area}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={mode === 'ask' ? 'トトに頼みたいこと' : mode === 'diary' ? '感じたこと・あったこと（そのまま残ります）' : '思いついたこと・頼みたいこと・URL'}
+          placeholder={mode === 'ask' ? `${ws.names.agent}に頼みたいこと` : mode === 'diary' ? '感じたこと・あったこと（そのまま残ります）' : '思いついたこと・頼みたいこと・URL'}
           rows={4}
         />
         {mode === 'diary' ? (
@@ -174,7 +174,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
                 下書きして
               </button>
             </div>
-            <p className="capture-hint">できたら Now の「トトたち」に出ます。Vault の中を調べます（Slack とWeb検索は見られません）。外への送信はしません。</p>
+            <p className="capture-hint">できたら Now の「{ws.names.agent}たち」に出ます。Vault の中を調べます（Slack とWeb検索は見られません）。外への送信はしません。</p>
           </>
         ) : (
           <div className="capture-actions">
@@ -182,7 +182,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
               <Icon name="pencil" size={16} /> メモ
             </button>
             <button className="chip-btn" disabled={busy || !text.trim()} onClick={() => setMode('ask')}>
-              <Icon name="send" size={16} /> トトに頼む
+              <Icon name="send" size={16} /> {ws.names.agent}に頼む
             </button>
             <button className="chip-btn" disabled={busy} onClick={clip}>
               <Icon name="link" size={16} /> クリップ
