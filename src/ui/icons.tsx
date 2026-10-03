@@ -25,6 +25,7 @@ const paths: Record<string, string> = {
   heading: 'M5 5v14M15 5v14M5 12h10M18 19v-7l-2 1.4',
   bullet: 'M9 7h11M9 12h11M9 17h11M5 7h.01M5 12h.01M5 17h.01',
   plus: 'M12 5v14M5 12h14',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z',
   send:'M21 3 10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z',
   inbox: 'M3.5 13.5 6 5h12l2.5 8.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5h5l1.5 2.5h4l1.5-2.5h5',
   calendar:'M4.5 6h15v14h-15zM4.5 10.5h15M8.5 3.5v4M15.5 3.5v4',

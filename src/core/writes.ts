@@ -75,6 +75,43 @@ export async function appendRemote(remote: VaultRemote, vault: Vault, path: stri
   return { ok: false, reason: '何度か競合しました。少し置いてから押してください', retry: true };
 }
 
+/**
+ * Rewrite a file from its newest version (or create it), e.g. adding a line under today's diary heading.
+ * `landed` says whether the change is already in a version (so a lost response is not applied twice).
+ */
+export async function editRemote(
+  remote: VaultRemote,
+  vault: Vault,
+  path: string,
+  transform: (raw: string | null) => string,
+  landed: (raw: string) => boolean,
+  message: string,
+): Promise<LineResult> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let latest;
+    try {
+      latest = await remote.file(path);
+    } catch (e) {
+      return { ok: false, reason: e instanceof AuthError ? e.message : '電波が戻ったら送ります', retry: !(e instanceof AuthError) };
+    }
+    if (latest && landed(latest.text)) {
+      await vault.applySaved(path, latest.sha, latest.text);
+      return { ok: true, line: '' };
+    }
+    const next = transform(latest?.text ?? null);
+    try {
+      const put = await remote.put(path, next, latest?.sha ?? '', message);
+      await vault.applySaved(path, put.sha, next);
+      return { ok: true, line: '' };
+    } catch (e) {
+      if (e instanceof ConflictError || e instanceof TransportError) continue;
+      if (e instanceof AuthError || e instanceof RejectedError) return { ok: false, reason: e.message, retry: false };
+      return { ok: false, reason: String(e), retry: true };
+    }
+  }
+  return { ok: false, reason: '電波が戻ったら送ります', retry: true };
+}
+
 /** Tick a task the way the Tasks plugin does. Returns the line as written, which undo needs. */
 export function completeTask(remote: VaultRemote, vault: Vault, path: string, original: string, today: string) {
   const to = setTaskDone(original.replace(/\r$/, ''), true, today);

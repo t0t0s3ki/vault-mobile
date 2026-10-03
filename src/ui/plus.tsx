@@ -5,6 +5,8 @@ import { basename } from '../core/note';
 import type { Task } from '../core/tasks';
 import { Icon } from './icons';
 import { Sheet, toast } from './kit';
+import { DIARY_KINDS } from '../core/diary';
+import { captureDiary } from './diary';
 import { captureClip, captureJob, captureMemo } from './work';
 
 /**
@@ -38,7 +40,8 @@ function contextLabel(c: Context) {
 export function PlusSheet({ ws }: { ws: Workspace }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
-  const [mode, setMode] = useState<'idle' | 'ask'>('idle');
+  const [mode, setMode] = useState<'idle' | 'ask' | 'diary'>('idle');
+  const [kind, setKind] = useState('');
   const [busy, setBusy] = useState(false);
   const [attach, setAttach] = useState(true);
   const ctx = useContextValue();
@@ -48,6 +51,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
       setOpen(o);
       setAttach(true);
       setMode('idle');
+      setKind('');
     };
     return () => void (opener = null);
   }, []);
@@ -88,6 +92,19 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
     setBusy(false);
     r === 'saved' ? done('トトに渡しました。毎時30分ごろに始めます') : failed(r);
   };
+  /** The diary takes 関's words as they are: no context, no rewording. */
+  const diary = async () => {
+    if (!text.trim()) return area.current?.focus();
+    setBusy(true);
+    const r = await captureDiary(ws, text, kind);
+    setBusy(false);
+    if (r === 'saved') done('日記の原料に入れました');
+    else if (r === 'queued') {
+      setText('');
+      close();
+      toast('電波が戻ったら日記に入れます（この端末に残っています）', 'info');
+    } else toast(r, 'bad');
+  };
   const clip = async () => {
     let src = text;
     if (!findUrl(src)) {
@@ -111,7 +128,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
   return (
     <Sheet open={open} onClose={close} title="投げる">
       <div className="plus">
-        {ctx && (
+        {ctx && mode !== 'diary' && (
           <button className={'ctx-chip' + (attach ? ' on' : '')} onClick={() => setAttach(!attach)} aria-pressed={attach}>
             <Icon name={ctx.kind === 'note' ? 'note' : 'task'} size={15} />
             <span>{contextLabel(ctx).slice(0, 30)}</span>
@@ -122,10 +139,29 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
           ref={area}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={mode === 'ask' ? 'トトに頼みたいこと' : '思いついたこと・頼みたいこと・URL'}
+          placeholder={mode === 'ask' ? 'トトに頼みたいこと' : mode === 'diary' ? '感じたこと・あったこと（そのまま残ります）' : '思いついたこと・頼みたいこと・URL'}
           rows={4}
         />
-        {mode === 'ask' ? (
+        {mode === 'diary' ? (
+          <>
+            <div className="kinds" role="radiogroup" aria-label="種類">
+              {DIARY_KINDS.map(([e, label]) => (
+                <button key={e} className={'kind' + (kind === e ? ' on' : '')} role="radio" aria-checked={kind === e} onClick={() => setKind(kind === e ? '' : e)}>
+                  {e} <small>{label}</small>
+                </button>
+              ))}
+            </div>
+            <div className="capture-actions">
+              <button className="chip-btn" onClick={() => setMode('idle')}>
+                戻る
+              </button>
+              <button className="chip-btn strong" disabled={busy || !text.trim()} onClick={diary}>
+                日記に入れる
+              </button>
+            </div>
+            <p className="capture-hint">08_Life/09_日記/_原料 の今月のファイル、今日の日付の下に、書いたまま1行で入ります。</p>
+          </>
+        ) : mode === 'ask' ? (
           <>
             <div className="capture-actions">
               <button className="chip-btn" onClick={() => setMode('idle')}>
@@ -150,6 +186,9 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
             </button>
             <button className="chip-btn" disabled={busy} onClick={clip}>
               <Icon name="link" size={16} /> クリップ
+            </button>
+            <button className="chip-btn" disabled={busy} onClick={() => setMode('diary')}>
+              <Icon name="heart" size={16} /> 日記
             </button>
           </div>
         )}

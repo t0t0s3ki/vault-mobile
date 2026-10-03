@@ -12,6 +12,7 @@ import { Mine } from './ui/mine';
 import { openPlus, PlusSheet } from './ui/plus';
 import { Now, Waiting } from './ui/now';
 import { isCapture } from './ui/work';
+import { flushDiary } from './ui/diary';
 import './styles.css';
 
 /** After this long in the background the key is dropped and the lock screen returns. */
@@ -107,6 +108,7 @@ function App() {
     const refresh = (launch = false) => {
       if (document.hidden && !launch) return;
       resend();
+      void flushDiary(ws);
       if (running || (vault.syncedAt && Date.now() - vault.syncedAt < 3 * 60_000)) return;
       running = true;
       vault.sync().then(
