@@ -104,7 +104,8 @@ export function useVersion(source: { subscribe(fn: () => void): () => void; vers
 }
 
 export type Route =
-  | { name: 'home' }
+  /** `task` is the open status sheet (by task text), so "back" returns to it after visiting a note. */
+  | { name: 'home'; task: string }
   | { name: 'search'; q: string }
   | { name: 'shelf'; path: string }
   | { name: 'note'; path: string; anchor: string }
@@ -112,13 +113,23 @@ export type Route =
   | { name: 'settings' }
   | { name: 'new' }
   | { name: 'inbox'; tab: string }
-  | { name: 'waiting' }
-  | { name: 'read' };
+  | { name: 'waiting'; task: string }
+  | { name: 'mine' };
 
 export function parseRoute(hash: string): Route {
   const [head, ...rest] = hash.replace(/^#\/?/, '').split('/');
-  const tail = decodeURIComponent(rest.join('/'));
+  let tail = rest.join('/');
+  try {
+    tail = decodeURIComponent(tail);
+  } catch {
+    /* a literal % */
+  }
   switch (head) {
+    case 'task':
+      return { name: 'home', task: tail };
+    case 'mine':
+    case 'read':
+      return { name: 'mine' };
     case 'search':
       return { name: 'search', q: tail };
     case 'shelf':
@@ -134,18 +145,19 @@ export function parseRoute(hash: string): Route {
     case 'inbox':
       return { name: 'inbox', tab: tail || 'memo' };
     case 'waiting':
-      return { name: 'waiting' };
-    case 'read':
-      return { name: 'read' };
+      return { name: 'waiting', task: tail };
     case 'settings':
       return { name: 'settings' };
     default:
-      return { name: 'home' };
+      return { name: 'home', task: '' };
   }
 }
 
 export const href = {
   home: () => '#/',
+  task: (text: string) => '#/task/' + encodeURIComponent(text),
+  waitingTask: (text: string) => '#/waiting/' + encodeURIComponent(text),
+  mine: () => '#/mine',
   search: (q = '') => '#/search/' + encodeURIComponent(q),
   shelf: (path = '') => '#/shelf/' + encodeURIComponent(path),
   note: (path: string, anchor = '') => '#/note/' + encodeURIComponent(path + (anchor ? '#' + anchor : '')),
@@ -153,7 +165,7 @@ export const href = {
   settings: () => '#/settings',
   inbox: (tab = '') => '#/inbox/' + tab,
   waiting: () => '#/waiting',
-  read: () => '#/read',
+  read: () => '#/mine',
 };
 
 export function useRoute() {

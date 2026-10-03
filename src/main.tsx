@@ -6,8 +6,10 @@ import { Editor } from './ui/Editor';
 import { Import, Lock, Setup } from './ui/Gate';
 import { Icon } from './ui/icons';
 import { stamp, Toasts } from './ui/kit';
-import { Home, NoteView, Search, Settings, Shelf } from './ui/screens';
+import { NoteView, Search, Settings, Shelf } from './ui/screens';
 import { Inbox } from './ui/inbox';
+import { Mine } from './ui/mine';
+import { openPlus, PlusSheet } from './ui/plus';
 import { Now, Waiting } from './ui/now';
 import { isCapture } from './ui/work';
 import './styles.css';
@@ -16,22 +18,35 @@ import './styles.css';
 const RELOCK_MS = 10 * 60_000;
 const IDLE_MS = 15 * 60_000;
 
+/** Where each tab lives; the ＋ in the middle is not a page but the throw sheet, from anywhere. */
 function Nav({ active }: { active: string }) {
-  const items = [
-    ['home', 'いま', href.home(), 'home'],
-    ['inbox', 'インボックス', href.inbox(), 'inbox'],
-    ['search', '探す', href.search(), 'search'],
-  ];
+  const tab = (k: string, label: string, to: string, icon: string) => (
+    <a key={k} href={to} className={active === k ? 'on' : ''}>
+      <Icon name={icon} size={22} />
+      <span>{label}</span>
+    </a>
+  );
   return (
     <nav className="tabbar">
-      {items.map(([k, label, to, icon]) => (
-        <a key={k} href={to} className={active === k ? 'on' : ''}>
-          <Icon name={icon} size={22} />
-          <span>{label}</span>
-        </a>
-      ))}
+      {tab('now', 'Now', href.home(), 'home')}
+      {tab('library', 'Library', href.shelf(''), 'shelf')}
+      <button className="plus-tab" onClick={openPlus} aria-label="投げる">
+        <span>
+          <Icon name="plus" size={26} />
+        </span>
+      </button>
+      {tab('search', 'Search', href.search(), 'search')}
+      {tab('mine', 'Mine', href.mine(), 'inbox')}
     </nav>
   );
+}
+
+/** Which tab a screen belongs to, so the bar always says where you are. */
+function tabOf(name: string) {
+  if (name === 'home' || name === 'waiting') return 'now';
+  if (name === 'shelf') return 'library';
+  if (name === 'search') return 'search';
+  return 'mine';
 }
 
 type Boot = { s: 'loading' } | { s: 'setup' } | { s: 'locked'; record: LockRecord } | { s: 'ready'; ws: Workspace } | { s: 'error'; error: string };
@@ -123,27 +138,33 @@ function App() {
   }, [route]);
 
   const ready = (ws: Workspace) => setBoot({ s: 'ready', ws });
+  // After unlocking, start from Now (a fresh look at where things stand), not wherever the app was left.
+  const unlocked = (ws: Workspace) => {
+    if (location.hash && location.hash !== '#/') location.replace('#/');
+    ready(ws);
+  };
   let screen;
   if (boot.s === 'loading') screen = <div className="gate center" />;
   else if (boot.s === 'error') screen = <p className="quiet pad">起動できませんでした：{boot.error}</p>;
   else if (boot.s === 'setup') screen = <Setup onReady={ready} />;
-  else if (boot.s === 'locked') screen = <Lock record={boot.record} onReady={ready} onWiped={() => setBoot({ s: 'setup' })} />;
+  else if (boot.s === 'locked') screen = <Lock record={boot.record} onReady={unlocked} onWiped={() => setBoot({ s: 'setup' })} />;
   else if (!boot.ws.mock && !boot.ws.vault.syncedAt && !imported) screen = <Import ws={boot.ws} onDone={() => setImported(true)} />;
   else {
     const { ws } = boot;
     const full = route.name === 'note' || route.name === 'edit' || route.name === 'new';
     screen = (
       <div className={'app' + (full ? ' full' : '')}>
-        {route.name === 'home' && <Now ws={ws} />}
-        {route.name === 'read' && <Home ws={ws} />}
+        {route.name === 'home' && <Now ws={ws} taskText={route.task} />}
+        {route.name === 'mine' && <Mine ws={ws} />}
         {route.name === 'inbox' && <Inbox ws={ws} tab={route.tab} />}
-        {route.name === 'waiting' && <Waiting ws={ws} />}
+        {route.name === 'waiting' && <Waiting ws={ws} taskText={route.task} />}
         {route.name === 'search' && <Search ws={ws} q={route.q} />}
         {route.name === 'shelf' && <Shelf key={route.path} ws={ws} path={route.path} />}
         {route.name === 'note' && <NoteView key={route.path} ws={ws} path={route.path} anchor={route.anchor} />}
         {route.name === 'edit' && <Editor key={route.path} ws={ws} path={route.path} />}
         {route.name === 'settings' && <Settings ws={ws} onReset={() => location.reload()} />}
-        {!full && <Nav active={route.name} />}
+        {!full && <Nav active={tabOf(route.name)} />}
+        <PlusSheet ws={ws} />
       </div>
     );
   }

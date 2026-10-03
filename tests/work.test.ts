@@ -259,3 +259,19 @@ test('待ちの句は末尾の 🤖 を含まない', () => {
   const b = parseTasks('## 🔥 アクティブ\n- [ ] ⏸ 伊藤さん・返事 🤖\n');
   assert.equal(b.waiting[0].waiting, '伊藤さん・返事');
 });
+
+test('返事：最新の末尾に足し、競合しても他の追記を消さず、二重に足さない', async () => {
+  const { appendRemote } = await import('../src/core/writes.ts');
+  const path = '00_Cockpit/thinking/スマホ依頼_20261003-51_x.md';
+  const remote = new MockRemote({ [path]: '---\nsummary: 結論\n---\n# 結果\n' });
+  const vault = new Vault(remote, new MemoryStore());
+  await vault.sync();
+  remote.inject('conflict-race');
+  const block = '## 関の返事（スマホ・2026-10-04 08:00）\n\n- これで進めて';
+  assert.equal((await appendRemote(remote, vault, path, block, 'm')).ok, true);
+  const now = remote.peek(path)!;
+  assert.ok(now.includes('（別の端末の追記）') && now.endsWith('- これで進めて\n'));
+  remote.inject('lost-response');
+  await appendRemote(remote, vault, path, block, 'm');
+  assert.equal(remote.peek(path)!.split('## 関の返事').length - 1, 1, '同じ返事は一度だけ');
+});

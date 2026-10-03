@@ -42,6 +42,39 @@ export async function replaceRemoteLine(remote: VaultRemote, vault: Vault, path:
   return { ok: false, reason: '何度か競合しました。少し置いてから押してください', retry: true };
 }
 
+/**
+ * Add text at the end of whatever the file holds now (e.g. 関's reply under a result note).
+ * Same discipline as line replace: start from the latest version, retry on conflict,
+ * and on an unknown outcome check whether the text already landed before sending again.
+ */
+export async function appendRemote(remote: VaultRemote, vault: Vault, path: string, text: string, message: string): Promise<LineResult> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let latest;
+    try {
+      latest = await remote.file(path);
+    } catch (e) {
+      return { ok: false, reason: e instanceof AuthError ? e.message : '電波が戻ったら、もう一度押してください', retry: true };
+    }
+    if (!latest) return { ok: false, reason: 'ノートが見つかりません', retry: false };
+    if (latest.text.includes(text.trim())) {
+      await vault.applySaved(path, latest.sha, latest.text);
+      return { ok: true, line: text };
+    }
+    const eol = latest.text.includes('\r\n') ? '\r\n' : '\n';
+    const body = latest.text.replace(/\s*$/, '') + eol + eol + text.trim().replace(/\r?\n/g, eol) + eol;
+    try {
+      const put = await remote.put(path, body, latest.sha, message);
+      await vault.applySaved(path, put.sha, body);
+      return { ok: true, line: text };
+    } catch (e) {
+      if (e instanceof ConflictError || e instanceof TransportError) continue;
+      if (e instanceof AuthError || e instanceof RejectedError) return { ok: false, reason: e.message, retry: false };
+      return { ok: false, reason: String(e), retry: true };
+    }
+  }
+  return { ok: false, reason: '何度か競合しました。少し置いてから押してください', retry: true };
+}
+
 /** Tick a task the way the Tasks plugin does. Returns the line as written, which undo needs. */
 export function completeTask(remote: VaultRemote, vault: Vault, path: string, original: string, today: string) {
   const to = setTaskDone(original.replace(/\r$/, ''), true, today);

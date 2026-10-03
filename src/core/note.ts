@@ -32,7 +32,7 @@ export type NoteMeta = {
   v: number;
 };
 
-export const META_VERSION = 5;
+export const META_VERSION = 6;
 
 /** Plain text of the first paragraphs: no markup, links reduced to their label. */
 export function excerptOf(body: string, max = 90) {
@@ -51,7 +51,8 @@ export function excerptOf(body: string, max = 90) {
         .replace(/^([-*+]|\d+\.)\s+(\[.\]\s+)?/, '')
         .replace(/!?\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_, a, b) => b || a.split('#')[0])
         .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-        .replace(/[*_`=~]|%%.*?%%/g, ''),
+        .replace(/[*_`=~]|%%.*?%%/g, '')
+        .replace(/\s\^[\w-]+\s*$/, ''),
     );
     if (out.join(' ').length >= max) break;
   }

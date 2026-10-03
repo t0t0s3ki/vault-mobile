@@ -36,8 +36,16 @@ export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
 
   return (
     <main className="page">
-      <header className="home-head">
-        <h1>インボックス</h1>
+      <header className="shelf-head">
+        <button className="icon-btn" onClick={() => history.back()} aria-label="戻る">
+          <Icon name="back" />
+        </button>
+        <div>
+          <nav className="crumbs">
+            <a href={href.mine()}>Mine</a>
+          </nav>
+          <h1>{isClips ? 'クリップ' : 'メモ'}</h1>
+        </div>
       </header>
       <div className="seg">
         <a className={!isClips ? 'on' : ''} href={href.inbox('memo')}>

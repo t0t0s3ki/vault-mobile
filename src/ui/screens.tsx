@@ -4,8 +4,10 @@ import { splitFrontmatter, type NoteMeta } from '../core/note';
 import { toEditable } from '../core/text';
 import { writable } from '../core/vault';
 import { Icon } from './icons';
-import { ago, minutes, setPrefs, Sheet, splitNumber, today, toast, usePins, usePrefs } from './kit';
+import { ago, minutes, setPrefs, Sheet, splitNumber, toast, usePins, usePrefs } from './kit';
 import { Markdown, slug, toggleTaskLine } from './Markdown';
+import { openPlus, setContext } from './plus';
+import { isResult, Reply } from './reply';
 
 const folderLabel = (folder: string) => {
   const last = folder.split('/').pop() || 'Vault';
@@ -14,7 +16,7 @@ const folderLabel = (folder: string) => {
 
 /* ——— shared rows ——— */
 
-function NoteRow({ meta, right }: { meta: NoteMeta; right?: string }) {
+export function NoteRow({ meta, right }: { meta: NoteMeta; right?: string }) {
   return (
     <a className="row" href={href.note(meta.path)}>
       <span className="row-main">
@@ -29,7 +31,7 @@ function NoteRow({ meta, right }: { meta: NoteMeta; right?: string }) {
   );
 }
 
-function usePositions(ws: Workspace, version: number) {
+export function usePositions(ws: Workspace, version: number) {
   const [positions, setPositions] = useState<Map<string, Position>>(new Map());
   useEffect(() => {
     const prefix = ws.remote.id + '\u0000';
@@ -61,151 +63,6 @@ export function SyncButton({ ws, compact }: { ws: Workspace; compact?: boolean }
       <Icon name="sync" size={18} />
       {!compact && <span>{busy ?? (ws.vault.syncedAt ? ago(ws.vault.syncedAt) : '未取得')}</span>}
     </button>
-  );
-}
-
-/* ——— home ——— */
-
-export function Home({ ws }: { ws: Workspace }) {
-  const v = useVersion(ws.vault);
-  useVersion(ws.saves);
-  const positions = usePositions(ws, v);
-  const { pins } = usePins(ws);
-
-  const continuing = [...positions]
-    .filter(([, p]) => p.ratio > 0.03 && p.ratio < 0.96)
-    .map(([path, p]) => ({ meta: ws.vault.metas.get(path), p }))
-    .filter((x): x is { meta: NoteMeta; p: Position } => !!x.meta)
-    .sort((a, b) => b.p.at - a.p.at)
-    .slice(0, 3);
-  const drafts = ws.saves.unsaved();
-  const memos = ws.vault.latestIn(ws.places.memos, 3);
-  const fresh = ws.vault.recent(6, [ws.places.memos]);
-  const projects = ws.vault.folder(ws.places.projects).folders;
-  const pinned = pins.map((p) => ws.vault.metas.get(p)).filter((m): m is NoteMeta => !!m);
-  const [hero, ...more] = continuing;
-
-  return (
-    <main className="page home">
-      <header className="home-head">
-        <div>
-          <p className="date">{today()}</p>
-          <h1>Vault</h1>
-        </div>
-        <SyncButton ws={ws} />
-      </header>
-      <a className="search-field" href={href.search()}>
-        <Icon name="search" size={18} />
-        ノートを探す
-      </a>
-
-      {drafts.length > 0 && (
-        <section className="block">
-          <div className="notice">
-            <Icon name="alert" size={18} />
-            <div>
-              <strong>まだ送っていない編集が{drafts.length}件</strong>
-              {drafts.map((d) => (
-                <a key={d.path} href={href.edit(d.path)}>
-                  {ws.vault.metas.get(d.path)?.title ?? d.path.split('/').pop()}
-                  <small>{{ editing: '下書き', saving: '送信中', unknown: '届いたか未確認', conflict: '競合' }[d.state]}</small>
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {hero && (
-        <section className="block">
-          <h2 className="label">続きから</h2>
-          <a className="hero" href={href.note(hero.meta.path)}>
-            <span className="hero-folder">{folderLabel(hero.meta.folder)}</span>
-            <span className="hero-title">{hero.meta.title}</span>
-            {hero.meta.excerpt && <span className="hero-excerpt">{hero.meta.excerpt}</span>}
-            <span className="hero-foot">
-              <span className="progress">
-                <span style={{ width: `${Math.round(hero.p.ratio * 100)}%` }} />
-              </span>
-              あと{minutes(hero.meta.chars * (1 - hero.p.ratio)).replace('約', '')}
-            </span>
-          </a>
-          {more.map(({ meta, p }) => (
-            <a key={meta.path} className="row compact" href={href.note(meta.path)}>
-              <span className="row-main">
-                <span className="row-title">{meta.title}</span>
-              </span>
-              <span className="ring" style={{ ['--p' as string]: `${Math.round(p.ratio * 100)}%` }} />
-            </a>
-          ))}
-        </section>
-      )}
-
-      <section className="block">
-        <div className="label-row">
-          <h2 className="label">メモ</h2>
-          <a href={href.shelf(ws.places.memos)}>すべて</a>
-        </div>
-        {memos.length ? (
-          <div className="memos">
-            {memos.map((m) => (
-              <a key={m.path} className="memo" href={href.note(m.path)}>
-                <span className="memo-title">{m.title}</span>
-                <span className="memo-excerpt">{m.excerpt}</span>
-                <span className="memo-when">{ago(m.updated)}</span>
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="quiet">思いついたことは右下の「書く」から。{ws.places.memos} に1枚ずつ残ります。</p>
-        )}
-      </section>
-
-      {pinned.length > 0 && (
-        <section className="block">
-          <h2 className="label">ピン</h2>
-          <div className="pins">
-            {pinned.map((m) => (
-              <a key={m.path} className="pin" href={href.note(m.path)}>
-                <Icon name="star" size={14} filled />
-                {m.title}
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="block">
-        <h2 className="label">新しく置かれたもの</h2>
-        {fresh.map((m) => (
-          <NoteRow key={m.path} meta={m} />
-        ))}
-      </section>
-
-      {projects.length > 0 && (
-        <section className="block">
-          <h2 className="label">プロジェクト</h2>
-          <div className="tiles">
-            {projects.map((f) => {
-              const { num, name } = splitNumber(f.name);
-              return (
-                <a key={f.path} className="tile" href={href.shelf(f.path)}>
-                  <span className="tile-name">{name}</span>
-                  <span className="tile-meta">
-                    {num && <span>{num}</span>}
-                    <span>{f.count}件</span>
-                  </span>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-      )}
-      <a className="fab" href="#/new" aria-label="メモを書く">
-        <Icon name="pencil" size={20} />
-        書く
-      </a>
-    </main>
   );
 }
 
@@ -321,14 +178,6 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
       </div>
       {!query && (
         <>
-          <nav className="now-links top">
-            <a href={href.shelf('')}>
-              <Icon name="shelf" size={18} /> 棚から探す
-            </a>
-            <a href={href.read()}>
-              <Icon name="note" size={18} /> 読みかけ・ピン
-            </a>
-          </nav>
           {queries.length > 0 && (
             <section className="block">
               <h2 className="label">最近の検索</h2>
@@ -376,6 +225,8 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
   const { folders, notes } = ws.vault.folder(path);
   const crumbs = path ? path.split('/') : [];
   const isMemos = path === ws.places.memos;
+  // What moved deeper down: notes directly here are already listed below, newest first.
+  const moved = path && folders.length ? ws.vault.recentUnder(path, 12).filter((m) => m.folder !== path).slice(0, 3) : [];
   return (
     <main className="page">
       {path ? (
@@ -384,14 +235,30 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
             <Icon name="back" />
           </button>
           <div>
-            <p className="crumbs">{crumbs.slice(0, -1).map((c) => splitNumber(c).name).join(' / ') || 'Vault'}</p>
+            {/* Where am I: every step back up is one tap. */}
+            <nav className="crumbs">
+              <a href={href.shelf('')}>Library</a>
+              {crumbs.slice(0, -1).map((c, i) => (
+                <a key={i} href={href.shelf(crumbs.slice(0, i + 1).join('/'))}>
+                  {splitNumber(c).name}
+                </a>
+              ))}
+            </nav>
             <h1>{folderLabel(path)}</h1>
           </div>
         </header>
       ) : (
         <header className="home-head">
-          <h1>棚</h1>
+          <h1>Library</h1>
         </header>
+      )}
+      {moved.length > 0 && (
+        <section className="block">
+          <h2 className="label">この下で最近動いたノート</h2>
+          {moved.map((m) => (
+            <NoteRow key={m.path} meta={m} />
+          ))}
+        </section>
       )}
       {folders.length > 0 && (
         <section className="block">
@@ -483,6 +350,13 @@ export function NoteView({ ws, path, anchor }: { ws: Workspace; path: string; an
   const prefs = usePrefs();
   const swipe = useRef<{ x: number; y: number; on: boolean } | null>(null);
   const [drag, setDrag] = useState(0);
+
+  // While this note is open, ＋ attaches it as the context of whatever is thrown in.
+  useEffect(() => {
+    if (!meta) return;
+    setContext({ kind: 'note', path, title: meta.title });
+    return () => setContext(null);
+  }, [path, !!meta]);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -639,6 +513,7 @@ export function NoteView({ ws, path, anchor }: { ws: Workspace; path: string; an
               )}
             </footer>
           )}
+          {isResult(path, note.raw) && <Reply ws={ws} path={path} />}
           {backlinks.length > 0 && (
             <section className="backlinks">
               <h2 className="label">このノートを参照している</h2>
@@ -664,6 +539,9 @@ export function NoteView({ ws, path, anchor }: { ws: Workspace; path: string; an
         ))}
       </Sheet>
       <ReadSettings open={sheet === 'type'} onClose={() => setSheet(null)} />
+      <button className="reader-plus" onClick={openPlus} aria-label="投げる（このノートを添えて）">
+        <Icon name="plus" size={24} />
+      </button>
     </div>
   );
 }

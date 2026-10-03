@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { href, useVersion, type Workspace } from '../app';
-import { findUrl } from '../core/clips';
 import { splitFrontmatter } from '../core/note';
 import { askOf, profileUrl, readMembers, slackDomain, type Person } from '../core/people';
 import { buttons as allButtons, daysUntil, latestNote, thisWeek, type Spark, type Task, type TaskBoard } from '../core/tasks';
@@ -8,7 +7,8 @@ import { completeTask, undoComplete } from '../core/writes';
 import { Icon } from './icons';
 import { ago, Sheet, toast, today } from './kit';
 import { Markdown } from './Markdown';
-import { captureClip, captureJob, captureMemo, TASKS_PATH, useBoard, useJobs } from './work';
+import { openPlus, setContext } from './plus';
+import { captureJob, TASKS_PATH, useBoard, useJobs } from './work';
 
 const ymd = () => {
   const d = new Date();
@@ -62,96 +62,6 @@ function usePeople(ws: Workspace) {
   }, [v]);
 }
 
-/* ——— capture ——— */
-
-function Capture({ ws }: { ws: Workspace }) {
-  const [text, setText] = useState('');
-  const [mode, setMode] = useState<'idle' | 'ask'>('idle');
-  const [busy, setBusy] = useState(false);
-  const area = useRef<HTMLTextAreaElement>(null);
-  const done = (msg: string) => {
-    setText('');
-    setMode('idle');
-    toast(msg, 'ok');
-  };
-  const failed = (r: string) => {
-    setText('');
-    setMode('idle');
-    toast(r === 'conflict' ? '送れませんでした。もう一度押してください' : '電波が戻ったら自動で送ります（この端末に残っています）', 'bad');
-  };
-
-  const memo = async () => {
-    if (!text.trim()) return area.current?.focus();
-    setBusy(true);
-    const r = await captureMemo(ws, text);
-    setBusy(false);
-    r === 'saved' ? done('メモにしました') : failed(r);
-  };
-  const ask = async (kind: 'research' | 'draft') => {
-    setBusy(true);
-    const { r } = await captureJob(ws, text, kind);
-    setBusy(false);
-    r === 'saved' ? done('トトに渡しました。毎時30分ごろに始めます') : failed(r);
-  };
-  const clip = async () => {
-    let src = text;
-    if (!findUrl(src)) {
-      try {
-        src = await navigator.clipboard.readText();
-      } catch {
-        return toast('URL を貼り付けてから押してください', 'info');
-      }
-    }
-    const url = findUrl(src);
-    if (!url) return toast('URL が見つかりませんでした', 'info');
-    const note = text.replace(url, '').trim();
-    const dup = [...ws.vault.metas.values()].some((m) => m.path.startsWith('01_Inbox/Clips/') && ws.vault.note(m.path)?.raw.includes(url));
-    if (dup) return toast('このURLはもうクリップしてあります', 'info');
-    setBusy(true);
-    const { r } = await captureClip(ws, { url, note: note || undefined });
-    setBusy(false);
-    r === 'saved' ? done('クリップしました。中身はトトがあとで読みます') : failed(r);
-  };
-
-  return (
-    <section className="capture">
-      <textarea
-        ref={area}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="思いついたこと・頼みたいこと"
-        rows={text ? Math.min(6, text.split('\n').length + 1) : 1}
-      />
-      {mode === 'ask' ? (
-        <div className="capture-actions">
-          <button className="chip-btn" onClick={() => setMode('idle')}>
-            戻る
-          </button>
-          <button className="chip-btn strong" disabled={busy || !text.trim()} onClick={() => ask('research')}>
-            調べてまとめて
-          </button>
-          <button className="chip-btn strong" disabled={busy || !text.trim()} onClick={() => ask('draft')}>
-            下書きして
-          </button>
-        </div>
-      ) : (
-        <div className="capture-actions">
-          <button className="chip-btn strong" disabled={busy} onClick={memo}>
-            <Icon name="pencil" size={16} /> メモ
-          </button>
-          <button className="chip-btn" disabled={busy || !text.trim()} onClick={() => setMode('ask')}>
-            <Icon name="send" size={16} /> トトに頼む
-          </button>
-          <button className="chip-btn" disabled={busy} onClick={clip}>
-            <Icon name="link" size={16} /> クリップ
-          </button>
-        </div>
-      )}
-      {mode === 'ask' && <p className="capture-hint">できたら「トトたち」に出ます。Vault の中を調べます（Slack とWeb検索は見られません）。外への送信はしません。</p>}
-    </section>
-  );
-}
-
 /* ——— status sheet: "状況どうやっけ" ——— */
 
 function grams(text: string) {
@@ -200,6 +110,11 @@ export function TaskSheet({ ws, task, onClose }: { ws: Workspace; task: Task | n
   const [busy, setBusy] = useState(false);
   const { people, domain } = usePeople(ws);
   const mention = useMemo(() => (task ? lastMention(ws, task) : null), [task]);
+  useEffect(() => {
+    if (!task) return;
+    setContext({ kind: 'task', task });
+    return () => setContext(null);
+  }, [task?.text]);
   if (!task) return null;
   const links = [...(task.raw + '\n' + task.sub.join('\n')).matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1]);
   const linked = links.map((l) => ws.vault.resolve(l, TASKS_PATH)).filter((p): p is string => !!p);
@@ -260,14 +175,14 @@ export function TaskSheet({ ws, task, onClose }: { ws: Workspace; task: Task | n
           </details>
         )}
         {mention && (
-          <a className="ts-mention" href={href.note(mention.path, mention.head)} onClick={onClose}>
+          <a className="ts-mention" href={href.note(mention.path, mention.head)}>
             <span className="label">関係しそうな記録 · {Number(mention.day.slice(4, 6))}/{Number(mention.day.slice(6))}</span>
             <strong>{mention.head.replace(/〔[^〕]+〕/g, '')}</strong>
             <span className="ts-mention-body">{mention.body.replace(/\*\*/g, '').slice(0, 140)}</span>
           </a>
         )}
         {firstLinked && (
-          <a className="ts-linked" href={href.note(firstLinked.path)} onClick={onClose}>
+          <a className="ts-linked" href={href.note(firstLinked.path)}>
             <Icon name="note" size={18} />
             <span>
               <strong>{firstLinked.title}</strong>
@@ -288,6 +203,9 @@ export function TaskSheet({ ws, task, onClose }: { ws: Workspace; task: Task | n
           )}
           <button className="btn" disabled={busy} onClick={askAbout}>
             <Icon name="send" size={18} /> トトにまとめてもらう
+          </button>
+          <button className="btn" onClick={openPlus}>
+            <Icon name="plus" size={18} /> この件で投げる
           </button>
         </div>
       </div>
@@ -326,11 +244,18 @@ function resultLine(ws: Workspace, artifact?: string) {
 
 /* ——— the "now" home ——— */
 
-export function Now({ ws }: { ws: Workspace }) {
+/** A task named in the URL (by its text), so the sheet survives a trip to a note and back. */
+export function findTask(board: TaskBoard, text: string) {
+  if (!text) return null;
+  return [...board.active, ...board.waiting].find((t) => t.text === text) ?? null;
+}
+
+export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
   useVersion(ws.saves);
   const board = useBoard(ws);
   const jobs = useJobs(ws);
-  const [open, setOpen] = useState<Task | null>(null);
+  const open = findTask(board, taskText);
+  const setOpen = (t: Task | null) => (t ? (location.hash = href.task(t.text)) : history.back());
 
   const promises = thisWeek(board).slice(0, 5);
   const press = pickButtons(board).filter((t) => !promises.includes(t));
@@ -347,14 +272,13 @@ export function Now({ ws }: { ws: Workspace }) {
       <header className="home-head">
         <div>
           <p className="date">{today()}</p>
-          <h1>いま</h1>
+          <h1>Now</h1>
         </div>
         <a className="icon-btn" href={href.settings()} aria-label="設定">
           <Icon name="gear" />
         </a>
       </header>
 
-      <Capture ws={ws} />
 
       {drafts.length > 0 && (
         <div className="notice">
@@ -441,7 +365,6 @@ export function Now({ ws }: { ws: Workspace }) {
 
       <nav className="now-links">
         <a href={href.waiting()}>相手のボール</a>
-        <a href={href.inbox()}>書いたメモ・クリップ</a>
       </nav>
 
       <TaskSheet ws={ws} task={open} onClose={() => setOpen(null)} />
@@ -450,9 +373,10 @@ export function Now({ ws }: { ws: Workspace }) {
 }
 
 /** Off the home screen on purpose: other people's balls are not 関's to-do. */
-export function Waiting({ ws }: { ws: Workspace }) {
+export function Waiting({ ws, taskText }: { ws: Workspace; taskText: string }) {
   const board = useBoard(ws);
-  const [open, setOpen] = useState<Task | null>(null);
+  const open = findTask(board, taskText);
+  const setOpen = (t: Task | null) => (t ? (location.hash = href.waitingTask(t.text)) : history.back());
   return (
     <main className="page">
       <header className="shelf-head">

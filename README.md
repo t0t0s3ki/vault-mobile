@@ -4,7 +4,11 @@ A phone-first PWA onto a Markdown vault (Obsidian style) that lives in a GitHub 
 
 It is built for the moments away from the desk: *where does everything stand, what do I do next, and what should the agents be doing meanwhile*.
 
-## What the home screen ("いま") does
+## Tabs: Now · Library · ＋ · Search · Mine
+
+Now is where things stand and what is next. Library walks the folders (with what moved below). ＋ throws a memo, request or clip from any screen, carrying what you are looking at as context. Search finds by title, alias, body or #tag. Mine holds your own: requests and their state, memos, clips, unfinished reading, pins. A result note from a request ends with a reply box (go ahead / please fix / later) that is appended to the note itself.
+
+## What Now does
 
 - **Throw things in.** One field: save it as a memo (a unique note), hand it to the agents as a request, or clip a URL.
 - **Next promises.** Deadline items from `Tasks.md`, nearest first; only the last week gets a countdown. Tap for the status: the item's own progress notes, the linked note, and the session-log section that most likely concerns it. "終わった" ticks the line (`- [x] … ✅ date`); moving it to the done log stays with the vault's night routine.

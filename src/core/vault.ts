@@ -268,6 +268,15 @@ export class Vault {
       .slice(0, limit);
   }
 
+  /** Newest notes anywhere under a folder (for "what moved in here"). */
+  recentUnder(folder: string, limit = 3) {
+    const prefix = folder ? folder + '/' : '';
+    return [...this.metas.values()]
+      .filter((m) => m.path.startsWith(prefix) && m.updated && writable(m.path))
+      .sort((a, b) => b.updated.localeCompare(a.updated))
+      .slice(0, limit);
+  }
+
   /** Notes directly in one folder, newest first. */
   latestIn(folder: string, limit = 5) {
     return [...this.metas.values()]
