@@ -74,7 +74,7 @@ export class GitHubRemote implements VaultRemote {
     const who = login ? `このトークンの持ち主は「${login}」です。` : '';
     const r = await this.call(`/repos/${owner}/${repo}`);
     if (r.status === 404)
-      return `${who}「${owner}/${repo}」がこのトークンから見えません。owner とリポジトリ名の綴り（0 と O など）と、トークンの Repository access で second-brain を選んだかを確かめてください`;
+      return `${who}「${owner}/${repo}」がこのトークンから見えません。owner とリポジトリ名の綴り（0 と O など）と、トークンの Repository access で ${repo} を選んだかを確かめてください`;
     if (!r.ok) return `${who}リポジトリを読めませんでした（${r.status}）`;
     const b = await this.call(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`);
     if (b.status === 404) return `${who}リポジトリは見えますが、ブランチ「${branch}」が見つかりません`;
