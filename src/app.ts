@@ -123,7 +123,9 @@ export type Route =
   | { name: 'new' }
   | { name: 'inbox'; tab: string }
   | { name: 'waiting'; task: string }
-  | { name: 'mine' };
+  | { name: 'mine' }
+  | { name: 'file'; path: string }
+  | { name: 'htmlcheck' };
 
 export function parseRoute(hash: string): Route {
   const [head, ...rest] = hash.replace(/^#\/?/, '').split('/');
@@ -139,6 +141,10 @@ export function parseRoute(hash: string): Route {
     case 'mine':
     case 'read':
       return { name: 'mine' };
+    case 'file':
+      return { name: 'file', path: tail };
+    case 'htmlcheck':
+      return { name: 'htmlcheck' };
     case 'search':
       return { name: 'search', q: tail };
     case 'shelf':
@@ -167,6 +173,7 @@ export const href = {
   task: (text: string) => '#/task/' + encodeURIComponent(text),
   waitingTask: (text: string) => '#/waiting/' + encodeURIComponent(text),
   mine: () => '#/mine',
+  file: (path: string) => '#/file/' + encodeURIComponent(path),
   search: (q = '') => '#/search/' + encodeURIComponent(q),
   shelf: (path = '') => '#/shelf/' + encodeURIComponent(path),
   note: (path: string, anchor = '') => '#/note/' + encodeURIComponent(path + (anchor ? '#' + anchor : '')),

@@ -3,7 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { href } from '../app';
 import { parseLink } from '../core/note';
-import type { Vault } from '../core/vault';
+import { isViewable, type Vault } from '../core/vault';
 
 const blank = (s: string) => s.replace(/[^\n]/g, '');
 
@@ -155,6 +155,13 @@ function MarkdownImpl({ raw, path, vault, onTask, pending }: { raw: string; path
           if (url.startsWith('embed:')) {
             const l = parseLink(decodeURIComponent(url.slice(6)));
             if (vault.isImage(l.target)) return <VaultImage vault={vault} target={l.target} from={path} size={l.label} />;
+            const html = isViewable(l.target) ? vault.resolveFile(l.target, path) : undefined;
+            if (html)
+              return (
+                <a className="wiki embed" href={href.file(html.path)}>
+                  {children}
+                </a>
+              );
             const to = vault.resolve(l.target, path);
             return to ? (
               <a className="wiki embed" href={href.note(to, l.anchor)}>
@@ -166,6 +173,13 @@ function MarkdownImpl({ raw, path, vault, onTask, pending }: { raw: string; path
           }
           if (url.startsWith('wiki:')) {
             const l = parseLink(decodeURIComponent(url.slice(5)));
+            const html = isViewable(l.target) ? vault.resolveFile(l.target, path) : undefined;
+            if (html)
+              return (
+                <a className="wiki" href={href.file(html.path)}>
+                  {children}
+                </a>
+              );
             const to = vault.resolve(l.target, path);
             return to ? (
               <a className="wiki" href={href.note(to, l.anchor)}>
@@ -179,6 +193,11 @@ function MarkdownImpl({ raw, path, vault, onTask, pending }: { raw: string; path
           }
           if (!url) return <span>{children}</span>;
           if (url.startsWith('#')) return <a href={href.note(path, url.slice(1))}>{children}</a>;
+          // A relative link to an HTML file in the vault ("[資料](report.html)") opens it here.
+          if (!/^[a-z][a-z0-9+.-]*:/i.test(url) && isViewable(url.split('#')[0])) {
+            const file = vault.resolveFile(url.split('#')[0], path);
+            if (file) return <a href={href.file(file.path)}>{children}</a>;
+          }
           return (
             <a href={url} target="_blank" rel="noopener noreferrer" className="external">
               {children}

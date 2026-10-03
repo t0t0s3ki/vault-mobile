@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Shows one HTML file from the vault. The app loads this page in an iframe with
+      sandbox="allow-scripts" and no allow-same-origin, so it runs under an opaque origin:
+      its scripts cannot read the app's storage, token or page. This policy lets a report
+      draw itself (inline/https scripts and styles, images, fonts) but not send data
+      anywhere (no fetch/XHR/WebSocket, no forms) or navigate away.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https:; style-src 'unsafe-inline' https:; img-src data: blob: https:; font-src data: https:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, 'Hiragino Sans', sans-serif;
+        color: #888;
+        display: grid;
+        place-items: center;
+        min-height: 60vh;
+      }
+    </style>
+  </head>
+  <body>
+    読み込んでいます…
+    <script>
+      // Only ever act inside an isolated frame (opaque origin "null"). Opened directly, or embedded
+      // by another site without a sandbox, this page shares the app's origin: then it does nothing,
+      // so no outside page can use it to run a document on the app's origin.
+      if (self.origin !== 'null' || parent === self) {
+        document.body.textContent = 'このページは Vault アプリの中でだけ使います。';
+      } else {
+        // Accept exactly one document, from the page that embedded us, then replace ourselves with it.
+        // document.open() keeps this document's policy, so the CSP above still applies afterwards.
+        addEventListener('message', function once(e) {
+          if (e.source !== parent || !e.data || typeof e.data.html !== 'string') return;
+          removeEventListener('message', once);
+          document.open();
+          document.write(e.data.html);
+          document.close();
+        });
+        parent.postMessage({ viewerReady: true }, '*');
+      }
+    </script>
+  </body>
+</html>

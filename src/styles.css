@@ -2093,3 +2093,17 @@ nav.crumbs a + a::before {
   flex: 1 1 22%;
   min-width: 0;
 }
+.file-view .html-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+.crumb.small {
+  font-size: 11px;
+  color: var(--ink-3);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

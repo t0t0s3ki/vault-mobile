@@ -100,3 +100,20 @@ test('ドットの段やバックスラッシュを含むパスには書かな�
   const r = new GitHubRemote({ owner: 'o', repo: 'r', branch: 'main' }, async () => 't', (async () => new Response('{}')) as unknown as typeof fetch, 'https://api.test');
   await assert.rejects(r.put('a/../../x.md', 'x', '', 'm'), /書けません/);
 });
+
+test('HTML：棚と検索に出し、開いたら端末に残す（2回目は取りに行かない）', async () => {
+  const { isViewable } = await import('../src/core/vault.ts');
+  const { remote, vault } = await setup();
+  const f = vault.folder('02_Projects/1002_読書会');
+  assert.deepEqual(f.files.map((e) => e.path), ['02_Projects/1002_読書会/読書会_振り返り.html']);
+  assert.equal(vault.searchFiles('振り返り')[0]?.path, '02_Projects/1002_読書会/読書会_振り返り.html');
+  assert.equal(vault.folder('02_Projects').folders.find((x) => x.name === '1002_読書会')!.count >= 3, true);
+  const entry = vault.entries.get('02_Projects/1002_読書会/読書会_振り返り.html')!;
+  assert.ok((await vault.fileText(entry)).includes('<title>'));
+  remote.texts = async () => {
+    throw new Error('取りに行ってはいけない');
+  };
+  assert.ok((await vault.fileText(entry)).includes('<title>'));
+  assert.equal(isViewable('.claude/tmp.html'), false);
+  assert.equal(isViewable('a/b.md'), false);
+});

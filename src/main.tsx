@@ -9,6 +9,8 @@ import { stamp, Toasts } from './ui/kit';
 import { NoteView, Search, Settings, Shelf } from './ui/screens';
 import { Inbox } from './ui/inbox';
 import { Mine } from './ui/mine';
+import { FileView } from './ui/FileView';
+import { HTML_CHECK } from './fixtures/htmlcheck';
 import { openPlus, PlusSheet } from './ui/plus';
 import { Now, Waiting } from './ui/now';
 import { isCapture } from './ui/work';
@@ -153,11 +155,13 @@ function App() {
   else if (!boot.ws.mock && !boot.ws.vault.syncedAt && !imported) screen = <Import ws={boot.ws} onDone={() => setImported(true)} />;
   else {
     const { ws } = boot;
-    const full = route.name === 'note' || route.name === 'edit' || route.name === 'new';
+    const full = route.name === 'note' || route.name === 'edit' || route.name === 'new' || route.name === 'file' || route.name === 'htmlcheck';
     screen = (
       <div className={'app' + (full ? ' full' : '')}>
         {route.name === 'home' && <Now ws={ws} taskText={route.task} />}
         {route.name === 'mine' && <Mine ws={ws} />}
+        {route.name === 'file' && <FileView key={route.path} ws={ws} path={route.path} />}
+        {route.name === 'htmlcheck' && <FileView ws={ws} path="安全の確認.html" builtIn={HTML_CHECK} />}
         {route.name === 'inbox' && <Inbox ws={ws} tab={route.tab} />}
         {route.name === 'waiting' && <Waiting ws={ws} taskText={route.task} />}
         {route.name === 'search' && <Search ws={ws} q={route.q} />}

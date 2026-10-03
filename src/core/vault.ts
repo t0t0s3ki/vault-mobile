@@ -300,6 +300,7 @@ export class Vault {
     const prefix = dir ? dir + '/' : '';
     const folders = new Map<string, number>();
     const notes: NoteMeta[] = [];
+    const files: RemoteEntry[] = [];
     for (const meta of this.metas.values()) {
       if (!meta.path.startsWith(prefix)) continue;
       const rest = meta.path.slice(prefix.length);
@@ -307,11 +308,46 @@ export class Vault {
       if (slash < 0) notes.push(meta);
       else folders.set(rest.slice(0, slash), (folders.get(rest.slice(0, slash)) ?? 0) + 1);
     }
+    for (const e of this.entries.values()) {
+      if (!isViewable(e.path) || !e.path.startsWith(prefix)) continue;
+      const rest = e.path.slice(prefix.length);
+      const slash = rest.indexOf('/');
+      if (slash < 0) files.push(e);
+      else folders.set(rest.slice(0, slash), (folders.get(rest.slice(0, slash)) ?? 0) + 1);
+    }
     return {
       folders: [...folders].sort((a, b) => a[0].localeCompare(b[0], 'ja')).map(([name, count]) => ({ name, path: prefix + name, count })),
       notes: notes.sort((a, b) => b.updated.localeCompare(a.updated) || a.name.localeCompare(b.name, 'ja')),
+      files: files.sort((a, b) => b.path.localeCompare(a.path, 'ja')),
     };
   }
+
+  /** Viewable non-note files (HTML for now) whose name contains every term. */
+  searchFiles(query: string, limit = 20) {
+    const terms = norm(query.trim()).split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return [...this.entries.values()]
+      .filter((e) => isViewable(e.path) && terms.every((t) => norm(e.path).includes(t)))
+      .sort((a, b) => b.path.localeCompare(a.path, 'ja'))
+      .slice(0, limit);
+  }
+
+  /** Text of a non-note file, fetched on first open and then kept (sealed) on the device. */
+  async fileText(entry: RemoteEntry) {
+    const key = this.k('file:' + entry.sha);
+    const cached = await this.store.get<string>('images', key).catch(() => undefined);
+    if (typeof cached === 'string') return cached;
+    const got = await this.remote.texts([entry.sha]);
+    const text = got.get(entry.sha);
+    if (text === undefined) throw new Error('このファイルは文字として読めませんでした');
+    await this.store.put('images', key, text).catch(() => {});
+    return text;
+  }
+}
+
+/** Files other than notes that the app can show. */
+export function isViewable(path: string) {
+  return /\.html?$/i.test(path) && included(path);
 }
 
 export { parseLink };

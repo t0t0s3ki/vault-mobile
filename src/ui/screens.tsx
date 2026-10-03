@@ -127,6 +127,7 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
     return () => clearTimeout(t);
   }, [query]);
   const hits = useMemo(() => ws.vault.search(query), [query, v]);
+  const fileHits = useMemo(() => ws.vault.searchFiles(query), [query, v]);
   const terms = query.trim().split(/\s+/).filter(Boolean);
   const named = hits.filter((h) => h.score >= 4000);
   const inBody = hits.filter((h) => h.score < 4000);
@@ -201,11 +202,29 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
           <p className="quiet">端末の写しを探すので、電波がなくても使えます。#タグ でも探せます。</p>
         </>
       )}
-      {query && !hits.length && <p className="quiet">「{query}」は見つかりませんでした。言い方を変えるか、短くしてみてください。</p>}
+      {query && !hits.length && !fileHits.length && <p className="quiet">「{query}」は見つかりませんでした。言い方を変えるか、短くしてみてください。</p>}
       {named.length > 0 && (
         <section className="block">
           <h2 className="label">タイトル・別名</h2>
           {named.map(hit)}
+        </section>
+      )}
+      {fileHits.length > 0 && (
+        <section className="block">
+          <h2 className="label">HTML</h2>
+          {fileHits.map((f) => (
+            <a key={f.path} className="row" href={href.file(f.path)} onClick={() => rememberQuery(query)}>
+              <span className="row-main">
+                <span className="row-title">
+                  <Highlight text={f.path.split('/').pop()!.replace(/\.html?$/i, '')} terms={terms} />
+                </span>
+                <span className="row-meta">
+                  <span className="chip">{folderLabel(f.path.slice(0, f.path.lastIndexOf('/')))}</span>
+                  HTML
+                </span>
+              </span>
+            </a>
+          ))}
         </section>
       )}
       {inBody.length > 0 && (
@@ -222,7 +241,7 @@ export function Search({ ws, q }: { ws: Workspace; q: string }) {
 
 export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
   useVersion(ws.vault);
-  const { folders, notes } = ws.vault.folder(path);
+  const { folders, notes, files } = ws.vault.folder(path);
   const crumbs = path ? path.split('/') : [];
   const isMemos = path === ws.places.memos;
   // What moved deeper down: notes directly here are already listed below, newest first.
@@ -287,7 +306,21 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
           ))}
         </section>
       )}
-      {!folders.length && !notes.length && <p className="quiet">ノートがありません</p>}
+      {files.length > 0 && (
+        <section className="block">
+          <h2 className="label">HTML</h2>
+          {files.map((f) => (
+            <a key={f.path} className="row folder" href={href.file(f.path)}>
+              <Icon name="code" size={20} />
+              <span className="row-main">
+                <span className="row-title">{f.path.split('/').pop()!.replace(/\.html?$/i, '')}</span>
+              </span>
+              <span className="row-side">{f.size > 1e6 ? (f.size / 1e6).toFixed(1) + 'MB' : Math.max(1, Math.round(f.size / 1000)) + 'KB'}</span>
+            </a>
+          ))}
+        </section>
+      )}
+      {!folders.length && !notes.length && !files.length && <p className="quiet">ノートがありません</p>}
       {isMemos && (
         <a className="fab" href="#/new" aria-label="メモを書く">
           <Icon name="pencil" size={20} />
@@ -741,6 +774,17 @@ export function Settings({ ws, onReset }: { ws: Workspace; onReset: () => void }
           </div>
         </section>
       )}
+
+      <section className="block">
+        <h2 className="label">HTML の表示</h2>
+        <div className="group">
+          <p className="group-note">HTML は、アプリとは切り離した箱の中で表示します。中のスクリプトは動きますが、アプリの画面・保存場所・トークンには届かず、外へデータも送れません。この端末で実際にそうなっているかを確かめられます。</p>
+          <a className="group-row action" href="#/htmlcheck">
+            <Icon name="lock" size={20} />
+            <span className="grow">安全の確認を開く（全部「届かない／止まった」なら正常）</span>
+          </a>
+        </div>
+      </section>
 
       <section className="block">
         <h2 className="label">この端末</h2>

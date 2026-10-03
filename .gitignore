@@ -2,3 +2,6 @@ node_modules
 dist
 .artifacts
 *.local
+
+# temporary local probes
+public/_probe*.html

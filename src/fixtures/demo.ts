@@ -29,6 +29,8 @@ const long = [
 const cover =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><rect width="240" height="320" fill="#c9b99a"/><rect x="20" y="20" width="200" height="280" fill="none" stroke="#5b4a2f" stroke-width="3"/><text x="120" y="150" font-size="28" text-anchor="middle" fill="#3b2f1c" font-family="serif">読書会</text><text x="120" y="190" font-size="14" text-anchor="middle" fill="#3b2f1c" font-family="serif">ダミーの表紙</text></svg>';
 
+import { HTML_CHECK } from './htmlcheck';
+
 export const demoVault: Record<string, string | { bytes: Uint8Array; type: string }> = {
   '00_Cockpit/Tasks.md': `---
 type: tasks
@@ -84,6 +86,8 @@ updated: 2026-09-28
 # 1002 読書会
 
 月に一度、一冊を読む会（ダミー）。
+
+前回の振り返り：[[読書会_振り返り.html|振り返りの資料]]
 
 ![[表紙.svg|240]]
 
@@ -332,3 +336,6 @@ capture_note: 読書アプリの参考
 
 https://example.com/reading-ui
 `;
+
+demoVault['02_Projects/1002_読書会/読書会_振り返り.html'] = HTML_CHECK;
+
