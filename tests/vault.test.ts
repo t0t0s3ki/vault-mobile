@@ -89,3 +89,14 @@ test('最近更新とフォルダ', async () => {
     ['1001_試作アプリ', '1002_読書会'],
   );
 });
+
+test('ドットの段やバックスラッシュを含むパスには書かない', async () => {
+  const { safePath } = await import('../src/core/vault.ts');
+  for (const bad of ['01_Inbox/_uniquenote/../../00_Cockpit/jobs/queued/x.md', './a.md', 'a//b.md', '/a.md', 'a' + String.fromCharCode(92) + 'b.md', '..'])
+    assert.equal(safePath(bad), false, bad);
+  assert.equal(writable('01_Inbox/_uniquenote/../../04_Think/x.md'), false);
+  assert.equal(safePath('01_Inbox/_uniquenote/202610040812.md'), true);
+  const { GitHubRemote } = await import('../src/remote/github.ts');
+  const r = new GitHubRemote({ owner: 'o', repo: 'r', branch: 'main' }, async () => 't', (async () => new Response('{}')) as unknown as typeof fetch, 'https://api.test');
+  await assert.rejects(r.put('a/../../x.md', 'x', '', 'm'), /書けません/);
+});

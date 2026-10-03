@@ -1,4 +1,5 @@
 import { base64ToBytes, base64ToUtf8, utf8ToBase64 } from '../core/text';
+import { safePath } from '../core/vault';
 import { AuthError, ConflictError, RejectedError, TransportError, type RemoteEntry, type VaultRemote } from './types';
 
 export type GitHubTarget = { owner: string; repo: string; branch: string };
@@ -23,7 +24,9 @@ export class GitHubRemote implements VaultRemote {
     this.label = `${target.owner}/${target.repo}（${target.branch}）`;
   }
 
+  /** Last line of defence: a dot segment would let the request URL climb out of /contents/. */
   private path(p: string) {
+    if (!safePath(p)) throw new RejectedError('このパスには書けません');
     return p.split('/').map(encodeURIComponent).join('/');
   }
 

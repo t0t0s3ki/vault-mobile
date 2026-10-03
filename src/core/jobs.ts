@@ -195,7 +195,9 @@ export function requestJob(opts: { request: string; kind: RequestKind; context?:
     slug,
     prompt,
     inputs: [],
-    write_scope: ['00_Cockpit/jobs/**', out],
+    // Only the one result note. The runner's scope check always allows the Job's own file, so
+    // 00_Cockpit/jobs/** is left out on purpose: a misled run must not be able to queue new Jobs.
+    write_scope: [out],
     done_when: `${out} が存在し、frontmatter の summary（40字の結論）・選択肢と推奨・根拠・未確認を含む`,
     verify: `F="${out}"; test -f "$F" && grep -q "^summary:" "$F" && grep -q "未確認" "$F"`,
     budget_turns: 25,

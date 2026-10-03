@@ -137,15 +137,16 @@ test('Job：jobs.py と同じ形で書き、ID は全状態のフォルダで重
   assert.equal(back.kind, 'research');
   assert.ok(back.prompt.includes('Bitly の自社リダイレクト事例を調べて'));
   const fm = fmParse(j.text.split('\n').slice(1, j.text.split('\n').indexOf('---', 1)));
-  assert.deepEqual(fm.write_scope, ['00_Cockpit/jobs/**', j.output]);
+  assert.deepEqual(fm.write_scope, [j.output], '結果の1枚だけ。jobs/ には書けない');
   assert.equal(fm.runner_hint, 'actions');
   assert.equal(fm.closes_origin, 'False');
   assert.equal(slugify('  Bitly / 事例: 調べ  '), 'Bitly-事例-調べ');
   assert.equal(fmDump({ a: 'x', b: ['y'], c: null, d: false }), '---\na: x\nb: ["y"]\nd: False\n---');
 });
 
-const PY_PARSER = '/path/to/vault/07_System/scripts/proposal.py';
-test('Job：Vault の jobs.py が使う Python の読み手で読んでも同じ値になる', { skip: !existsSync(PY_PARSER) }, () => {
+// Set VAULT_ROOT to a checkout of the vault to check Job files against its own Python parser.
+const PY_PARSER = process.env.VAULT_ROOT ? `${process.env.VAULT_ROOT}/07_System/scripts/proposal.py` : '';
+test('Job：Vault の jobs.py が使う Python の読み手で読んでも同じ値になる', { skip: !PY_PARSER || !existsSync(PY_PARSER) }, () => {
   const j = requestJob({ request: '会議の準備：論点を3つにまとめて\n「詰め」たい: 2点', kind: 'draft', context: 'Tasks.md の行', now: new Date('2026-10-03T08:15:00'), existing: [] });
   const code = [
     'import importlib.util, json, sys',

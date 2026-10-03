@@ -6,9 +6,12 @@ import { Icon } from './icons';
 import { toast } from './kit';
 import { captureJob } from './work';
 
-/** A note Thoth wrote back for a phone request. */
+/**
+ * A note Thoth wrote back for a phone request. Decided by where it is, not by what it says about
+ * itself: any note could claim `type: mobile-request` to get a reply box.
+ */
 export function isResult(path: string, raw: string) {
-  return path.startsWith('00_Cockpit/thinking/スマホ依頼_') || splitFrontmatter(raw).data.type === 'mobile-request';
+  return /^00_Cockpit\/thinking\/スマホ依頼_\d{8}-\d{2,}_[^/]+\.md$/.test(path) && splitFrontmatter(raw).data.type === 'mobile-request';
 }
 
 function stamp() {

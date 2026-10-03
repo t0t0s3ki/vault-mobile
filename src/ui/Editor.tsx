@@ -63,7 +63,8 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
     } else if (cached && writable(path) && editableShape(cached.raw)) {
       ws.saves.begin(path, { sha: cached.sha, raw: cached.raw });
       setReady(true);
-    } else if (!cached && path.startsWith(ws.places.memos + '/') && writable(path)) {
+    } else if (!cached && writable(path) && /^\d{12,14}\.md$/.test(path.slice(ws.places.memos.length + 1)) && path.startsWith(ws.places.memos + '/')) {
+      // Only a memo named like the vault's memos, directly in the memo folder, may be created from a link.
       // A path in the memo folder that does not exist yet is a new memo; the first save creates it.
       ws.saves.begin(path, { sha: '', raw: '' });
       setReady(true);

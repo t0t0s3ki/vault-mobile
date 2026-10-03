@@ -13,9 +13,19 @@ export function included(path: string) {
   return !parts.some((p) => p.startsWith('.') || ['node_modules', 'dist', 'build', '_dev', 'Dev', 'okujo-workspace'].includes(p));
 }
 
+/**
+ * A plain relative path inside the vault: no ".", "..", empty segment, backslash or leading slash.
+ * Without this, "memos/../../00_Cockpit/jobs/queued/x.md" passes a prefix check and the request
+ * URL resolves the dots to a different folder.
+ */
+export function safePath(path: string) {
+  return !!path && !path.startsWith('/') && !/[\\\0]/.test(path) && path.split('/').every((s) => s !== '' && s !== '.' && s !== '..');
+}
+
 /** Files with their own update procedure (Tasks, Work State, generated views). Read here, edit elsewhere. */
 export function writable(path: string) {
   return (
+    safePath(path) &&
     path.endsWith('.md') &&
     !/^(00_Cockpit\/(state|changes|jobs|org_state)\/|00_Cockpit\/(Tasks(?:_.*)?|Done|Delegated|Decisions|active|WorkModel[^/]*)\.|AGENTS\.md$|CLAUDE\.md$|\.claude\/|Views\/)/i.test(path)
   );
