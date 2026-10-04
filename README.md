@@ -13,7 +13,8 @@ Now is where things stand and what is next. Library walks the folders (with what
 - **Throw things in.** One field: save it as a memo (a unique note), hand it to the agents as a request, or clip a URL.
 - **Next promises.** Deadline items from `Tasks.md`, nearest first; only the last week gets a countdown. Tap for the status: the item's own progress notes, the linked note, and the session-log section that most likely concerns it. "終わった" ticks the line (`- [x] … ✅ date`); moving it to the done log stays with the vault's night routine.
 - **What the agents did.** New results and failures of requests, plus today's agent-signed session-log headings. Nothing is shown when nothing changed.
-- **Three quick buttons** at most, with total minutes, and **one Spark** for the ride. No full lists to patrol, no counters.
+- **Three quick buttons** at most, with total minutes, and **one Spark** for the ride.
+- **タスクを見渡す** opens an optional compact overview of unfinished active and waiting items from `Tasks.md`. Filter by the existing active/waiting groups or search titles, waiting parties and deadlines. Two-line titles keep rows short; tap for the full status sheet and its existing actions. Filter, search and scroll position survive a trip into a linked note and back. Sparks, routines and non-waiting icebox items stay outside this overview; Jobs remain separate.
 
 Requests become files in the vault's existing unattended queue (`00_Cockpit/jobs/queued/`), written exactly as the vault's `jobs.py new` writes them (checked against its Python parser in tests). The result comes back as one note.
 

@@ -12,6 +12,7 @@ import { Mine } from './ui/mine';
 import { FileView } from './ui/FileView';
 import { HTML_CHECK } from './fixtures/htmlcheck';
 import { openPlus, PlusSheet } from './ui/plus';
+import { Tasks } from './ui/tasks';
 import { Now, Waiting } from './ui/now';
 import { isCapture } from './ui/work';
 import { flushDiary } from './ui/diary';
@@ -46,7 +47,7 @@ function Nav({ active }: { active: string }) {
 
 /** Which tab a screen belongs to, so the bar always says where you are. */
 function tabOf(name: string) {
-  if (name === 'home' || name === 'waiting') return 'now';
+  if (name === 'home' || name === 'waiting' || name === 'tasks') return 'now';
   if (name === 'shelf') return 'library';
   if (name === 'search') return 'search';
   return 'mine';
@@ -138,7 +139,7 @@ function App() {
   }, [boot, route]);
 
   useEffect(() => {
-    if (route.name !== 'note' && route.name !== 'edit') window.scrollTo(0, 0);
+    if (route.name !== 'note' && route.name !== 'edit' && route.name !== 'tasks') window.scrollTo(0, 0);
   }, [route]);
 
   const ready = (ws: Workspace) => setBoot({ s: 'ready', ws });
@@ -159,6 +160,7 @@ function App() {
     screen = (
       <div className={'app' + (full ? ' full' : '')}>
         {route.name === 'home' && <Now ws={ws} taskText={route.task} />}
+        {route.name === 'tasks' && <Tasks ws={ws} filter={route.filter} q={route.q} taskKey={route.task} />}
         {route.name === 'mine' && <Mine ws={ws} />}
         {route.name === 'file' && <FileView key={route.path} ws={ws} path={route.path} />}
         {route.name === 'htmlcheck' && <FileView ws={ws} path="安全の確認.html" builtIn={HTML_CHECK} />}

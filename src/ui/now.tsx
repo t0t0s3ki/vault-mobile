@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { href, useVersion, type Workspace } from '../app';
 import { splitFrontmatter } from '../core/note';
 import { askOf, profileUrl, readMembers, slackDomain, type Person } from '../core/people';
-import { buttons as allButtons, daysUntil, latestNote, thisWeek, type Spark, type Task, type TaskBoard } from '../core/tasks';
+import { buttons as allButtons, latestNote, thisWeek, type Spark, type Task, type TaskBoard } from '../core/tasks';
 import { completeTask, undoComplete } from '../core/writes';
+import { TaskRow, when } from './task-row';
 import { Icon } from './icons';
 import { ago, Sheet, toast, today } from './kit';
 import { Markdown } from './Markdown';
@@ -14,16 +15,6 @@ const ymd = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-
-/** Only the coming week gets a countdown; anything else is just a date. No red, no "overdue". */
-function when(due: string) {
-  const n = daysUntil(due);
-  if (n === 0) return '今日';
-  if (n === 1) return '明日';
-  if (n > 1 && n <= 7) return `あと${n}日`;
-  const d = new Date(due + 'T00:00:00');
-  return `${d.getMonth() + 1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
-}
 
 /** Doable from a bus seat in a few minutes: asking, replying, booking, requesting. */
 const PHONE = /聞く|連絡|返す|返信|伝える|取り直す|送る|予約|申請|依頼を出す|頼む|確定する/;
@@ -295,23 +286,16 @@ export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
         </div>
       )}
 
+      <a className="task-overview-link" href={href.tasks()}>
+        <span><strong>タスクを見渡す</strong><small>約束・押すだけ・相手待ち</small></span>
+        <span aria-hidden="true">→</span>
+      </a>
+
       {promises.length > 0 && (
         <section className="block">
           <h2 className="label">今週の約束</h2>
-          <div className="cards-list">
-            {promises.map((t) => {
-              const note = latestNote(t.sub);
-              return (
-                <button key={t.line} className="task-card" onClick={() => setOpen(t)}>
-                  {t.due && <span className="tc-when">{when(t.due)}</span>}
-                  <span className="tc-text">
-                    <span className="tc-area">{t.area}</span>
-                    {t.text}
-                  </span>
-                  {note && <span className="tc-last">{note}</span>}
-                </button>
-              );
-            })}
+          <div className="task-rows">
+            {promises.map((t) => <TaskRow key={t.line} task={t} onOpen={() => setOpen(t)} />)}
           </div>
         </section>
       )}
@@ -345,12 +329,9 @@ export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
             <h2 className="label">いま押せること</h2>
             {pressMinutes > 0 && <span className="quiet small">合わせて約{pressMinutes}分</span>}
           </div>
-          {press.map((t) => (
-            <button key={t.line} className="press" onClick={() => setOpen(t)}>
-              <span className="tc-area">{t.area}</span>
-              <span className="press-text">{t.text}</span>
-            </button>
-          ))}
+          <div className="task-rows">
+            {press.map((t) => <TaskRow key={t.line} task={t} onOpen={() => setOpen(t)} />)}
+          </div>
         </section>
       )}
 
