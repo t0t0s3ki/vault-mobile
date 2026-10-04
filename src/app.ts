@@ -123,6 +123,7 @@ export type Route =
   | { name: 'new' }
   | { name: 'inbox'; tab: string }
   | { name: 'waiting'; task: string }
+  | { name: 'tasks'; filter: string; q: string; task: string }
   | { name: 'mine' }
   | { name: 'file'; path: string }
   | { name: 'htmlcheck' };
@@ -136,6 +137,10 @@ export function parseRoute(hash: string): Route {
     /* a literal % */
   }
   switch (head) {
+    case 'tasks': {
+      const params = new URLSearchParams(rest.join('/'));
+      return { name: 'tasks', filter: params.get('filter') || 'all', q: params.get('q') || '', task: params.get('task') || '' };
+    }
     case 'task':
       return { name: 'home', task: tail };
     case 'mine':
@@ -170,6 +175,7 @@ export function parseRoute(hash: string): Route {
 
 export const href = {
   home: () => '#/',
+  tasks: (filter = 'all', q = '', task = '') => '#/tasks/' + new URLSearchParams({ filter, ...(q ? { q } : {}), ...(task ? { task } : {}) }).toString(),
   task: (text: string) => '#/task/' + encodeURIComponent(text),
   waitingTask: (text: string) => '#/waiting/' + encodeURIComponent(text),
   mine: () => '#/mine',

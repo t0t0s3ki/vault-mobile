@@ -2119,3 +2119,54 @@ nav.crumbs a + a::before {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Task scan: short rows first, full progress and actions in the status sheet. */
+.task-overview-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.task-overview-link strong { font-size: 16px; }
+.task-overview-link small { display: block; color: var(--ink-3); margin-top: 3px; font-size: 12px; }
+.task-rows { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--card); }
+.task-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.task-row:last-child { border-bottom: 0; }
+.task-row:active { background: var(--line); }
+.task-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.task-row-title {
+  font-size: 15px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.task-row-meta { display: flex; width: 100%; gap: 8px; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
+.task-row-meta > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.task-row-meta time { margin-left: auto; flex-shrink: 0; color: var(--accent); }
+.task-overview .shelf-head .sync-btn { margin-left: auto; }
+.task-filters { display: flex; gap: 6px; margin: 20px 0 12px; }
+.task-filters button { flex: 1; min-width: 0; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink-2); font-size: 13px; }
+.task-filters button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.task-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.task-search input { min-width: 0; width: 100%; min-height: 44px; border: 0; background: transparent; color: var(--ink); font-size: 16px; }
+.task-source { margin-top: 28px; }
+.ts-title { overflow-wrap: anywhere; }
