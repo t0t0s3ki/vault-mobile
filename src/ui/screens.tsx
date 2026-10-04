@@ -249,7 +249,7 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
   return (
     <main className="page">
       {path ? (
-        <header className="shelf-head">
+        <header className="shelf-head library-head">
           <button className="icon-btn" onClick={() => history.back()} aria-label="戻る">
             <Icon name="back" />
           </button>
@@ -267,7 +267,7 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
           </div>
         </header>
       ) : (
-        <header className="home-head">
+        <header className="home-head library-head">
           <h1>Library</h1>
         </header>
       )}
