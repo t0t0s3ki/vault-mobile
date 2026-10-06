@@ -1454,6 +1454,22 @@ details.callout[open] summary.callout-title {
   background: var(--accent);
   color: var(--accent-ink);
 }
+.brand-mark {
+  display: block;
+  flex: none;
+  border-radius: 23%;
+}
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gate-locked-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 .gate-title {
   font-size: 24px;
   line-height: 1.4;
