@@ -81,8 +81,21 @@ test('壊れたYAMLは本文を読めて、エラーとして知らせる', () =
 });
 
 test('最近更新とフォルダ', async () => {
-  const { vault } = await setup();
-  assert.equal(vault.recent(5, ['01_Inbox/_uniquenote'])[0].path, '02_Projects/1001_試作アプリ/README.md');
+  // Keep ordering independent of the demo's dates relative to today.
+  const remote = new MockRemote({
+    '02_Projects/1001_試作アプリ/README.md': '---\nupdated: 2026-10-03\n---\n# 試作',
+    '02_Projects/1002_読書会/README.md': '---\nupdated: 2026-10-01\n---\n# 読書会',
+    '01_Inbox/_uniquenote/202610020812.md': '新しいメモ',
+    '01_Inbox/_uniquenote/202610010812.md': '古いメモ',
+    '01_Inbox/Clips/20261004.md': '---\nupdated: 2026-10-04\n---\n# クリップ',
+  });
+  const vault = new Vault(remote, new MemoryStore());
+  await vault.sync();
+  assert.deepEqual(vault.recent(5, ['01_Inbox/_uniquenote', '01_Inbox/Clips']).map((m) => m.path), [
+    '02_Projects/1001_試作アプリ/README.md',
+    '02_Projects/1002_読書会/README.md',
+  ]);
+  assert.equal(vault.recent(1)[0].path, '01_Inbox/Clips/20261004.md');
   assert.equal(vault.latestIn('01_Inbox/_uniquenote')[0].path, '01_Inbox/_uniquenote/202610020812.md');
   assert.deepEqual(
     vault.folder('02_Projects').folders.map((f) => f.name),
