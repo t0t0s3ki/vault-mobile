@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vault">
+  <rect width="512" height="512" fill="#2d5a46"/>
+  <g fill="#f7f5f0">
+    <path d="M112 154C161 154 199 174 219 213L248 274V356C212 326 167 311 112 311Z"/>
+    <path d="M400 154C351 154 313 174 293 213L264 274V356C300 326 345 311 400 311Z"/>
+  </g>
+</svg>
