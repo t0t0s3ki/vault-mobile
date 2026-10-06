@@ -1,5 +1,5 @@
 // App shell only. Note text lives in IndexedDB; GitHub API responses are never cached here.
-const CACHE = 'vault-shell-v1';
+const CACHE = 'vault-shell-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
