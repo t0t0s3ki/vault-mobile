@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DEFAULT_PLACES, openDemo, openGitHub, remoteFor, saveConfig, setMode, useVersion, wipeDevice, type Config, type Workspace } from '../app';
 import { createPassphraseLock, createPasskeyLock, passkeyAvailable, unlock, type Key, type LockRecord } from '../core/lock';
 import { Icon } from './icons';
+import { BrandMark } from './BrandMark';
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -92,9 +93,7 @@ export function Setup({ onReady }: { onReady: (ws: Workspace) => void }) {
     return (
       <main className="gate">
         <div className="gate-hero">
-          <div className="gate-mark">
-            <Icon name="note" size={30} />
-          </div>
+          <BrandMark />
           <h1>Vault をポケットに</h1>
           <p>GitHub にある Markdown の Vault を、この iPhone で読んで、探して、書き足せます。電波がなくても読めます。</p>
         </div>
@@ -313,10 +312,8 @@ export function Lock({ record, onReady, onWiped }: { record: LockRecord; onReady
   }, []);
   return (
     <main className="gate center">
-      <div className="gate-mark">
-        <Icon name="lock" size={30} />
-      </div>
-      <h1 className="gate-title">Vault</h1>
+      <BrandMark />
+      <h1 className="gate-title gate-locked-title"><Icon name="lock" size={18} /> Vault</h1>
       {record.kind === 'passkey' ? (
         <button className="btn primary big" disabled={busy} onClick={() => open()}>
           Face ID で開く

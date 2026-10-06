@@ -1,3 +1,4 @@
+import { BrandMark } from './BrandMark';
 import { useEffect, useMemo, useState } from 'react';
 import { href, useVersion, type Workspace } from '../app';
 import { splitFrontmatter } from '../core/note';
@@ -261,9 +262,12 @@ export function Now({ ws, taskText }: { ws: Workspace; taskText: string }) {
   return (
     <main className="page now">
       <header className="home-head">
-        <div>
-          <p className="date">{today()}</p>
-          <h1>Now</h1>
+        <div className="home-brand">
+          <BrandMark size={40} />
+          <div>
+            <p className="date">{today()}</p>
+            <h1>Now</h1>
+          </div>
         </div>
         <a className="icon-btn" href={href.settings()} aria-label="設定">
           <Icon name="gear" />
