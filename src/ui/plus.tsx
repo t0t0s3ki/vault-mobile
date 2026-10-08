@@ -6,6 +6,7 @@ import type { Task } from '../core/tasks';
 import { Icon } from './icons';
 import { Sheet, toast } from './kit';
 import { DIARY_KINDS } from '../core/diary';
+import { setSeed } from '../core/drafts';
 import { captureDiary } from './diary';
 import { captureClip, captureJob, captureMemo } from './work';
 
@@ -105,6 +106,13 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
       toast('電波が戻ったら日記に入れます（この端末に残っています）', 'info');
     } else toast(r, 'bad');
   };
+  /** Long-form: carry what was typed so far into the full-screen editor. */
+  const write = () => {
+    setSeed(text.trim());
+    setText('');
+    close();
+    location.hash = '#/write';
+  };
   const clip = async () => {
     let src = text;
     if (!findUrl(src)) {
@@ -189,6 +197,9 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
             </button>
             <button className="chip-btn" disabled={busy} onClick={() => setMode('diary')}>
               <Icon name="heart" size={16} /> 日記
+            </button>
+            <button className="chip-btn" disabled={busy} onClick={write}>
+              <Icon name="note" size={16} /> じっくり書く
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { href, openDemo, readLock, storedMode, useRoute, type Workspace } from './app';
+import { draftPath } from './core/drafts';
 import type { LockRecord } from './core/lock';
 import { Editor } from './ui/Editor';
 import { Import, Lock, Setup } from './ui/Gate';
@@ -138,6 +139,13 @@ function App() {
     location.replace(href.edit(`${ws.places.memos}/${name}.md`));
   }, [boot, route]);
 
+  // "#/write": a fresh long-form draft in the drafts folder.
+  useEffect(() => {
+    if (boot.s !== 'ready' || route.name !== 'write') return;
+    const { ws } = boot;
+    location.replace(href.edit(draftPath(ws.places.drafts, (p) => ws.vault.entries.has(p) || !!ws.saves.view(p))));
+  }, [boot, route]);
+
   useEffect(() => {
     if (route.name !== 'note' && route.name !== 'edit' && route.name !== 'tasks') window.scrollTo(0, 0);
   }, [route]);
@@ -156,7 +164,7 @@ function App() {
   else if (!boot.ws.mock && !boot.ws.vault.syncedAt && !imported) screen = <Import ws={boot.ws} onDone={() => setImported(true)} />;
   else {
     const { ws } = boot;
-    const full = route.name === 'note' || route.name === 'edit' || route.name === 'new' || route.name === 'file' || route.name === 'htmlcheck';
+    const full = route.name === 'note' || route.name === 'edit' || route.name === 'new' || route.name === 'write' || route.name === 'file' || route.name === 'htmlcheck';
     screen = (
       <div className={'app' + (full ? ' full' : '')}>
         {route.name === 'home' && <Now ws={ws} taskText={route.task} />}

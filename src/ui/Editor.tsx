@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { href, useVersion, type Workspace } from '../app';
+import { isNewDraft, takeSeed, withFront } from '../core/drafts';
 import type { DraftView } from '../core/save';
 import { editableShape, lineDiff } from '../core/text';
 import { writable } from '../core/vault';
@@ -54,6 +55,7 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
   const area = useRef<HTMLTextAreaElement>(null);
   const inset = useKeyboardInset();
   const isNew = !cached;
+  const isDraft = isNew && isNewDraft(ws.places.drafts, path);
 
   useEffect(() => {
     const existing = ws.saves.view(path);
@@ -68,6 +70,12 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
       // A path in the memo folder that does not exist yet is a new memo; the first save creates it.
       ws.saves.begin(path, { sha: '', raw: '' });
       setReady(true);
+    } else if (!cached && writable(path) && isNewDraft(ws.places.drafts, path)) {
+      // Same rule for a long-form draft: only today's "無題" name, directly in the drafts folder.
+      ws.saves.begin(path, { sha: '', raw: '' });
+      const seed = takeSeed();
+      if (seed) void ws.saves.edit(path, seed);
+      setReady(true);
     }
     return () => ws.saves.close(path);
   }, [path]);
@@ -76,7 +84,10 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
   useEffect(() => {
     const el = area.current;
     if (!ready || !el) return;
-    if (isNew) el.focus();
+    if (isNew) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
   }, [ready]);
 
   // A write with an unknown outcome is re-checked (read first) when the connection returns.
@@ -99,6 +110,8 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
   const where = ws.mock ? 'デモ Vault' : 'GitHub';
   const s = status(d, where);
   const save = async () => {
+    // A new draft gets the desk app's frontmatter on its first save; the editor shows only the text.
+    if (isDraft) await ws.saves.edit(path, withFront(ws.saves.view(path)!.body));
     const r = await ws.saves.save(path);
     if (r === 'saved') {
       toast(`${where}に保存しました`, 'ok');
@@ -143,7 +156,7 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
           <Icon name="back" />
         </button>
         <span className="bar-center">
-          <span className="bar-title on">{isNew ? '新しいメモ' : ws.vault.metas.get(path)?.title}</span>
+          <span className="bar-title on">{isDraft ? '新しい原稿' : isNew ? '新しいメモ' : ws.vault.metas.get(path)?.title}</span>
           {s.text && <span className={'save-state tone-' + s.tone}>{s.text}</span>}
         </span>
         <button className="pill-btn" onClick={save} disabled={!canSave || d.state === 'saving'}>
@@ -172,7 +185,7 @@ export function Editor({ ws, path }: { ws: Workspace; path: string }) {
         ref={area}
         className="source"
         value={d.body}
-        placeholder={isNew ? '思いついたことを書く。最初の行が題名になります' : ''}
+        placeholder={isDraft ? 'じっくり書く。閉じても書きかけはこの端末に残ります' : isNew ? '思いついたことを書く。最初の行が題名になります' : ''}
         spellCheck={false}
         autoCapitalize="off"
         onChange={(e) => void ws.saves.edit(path, e.target.value)}

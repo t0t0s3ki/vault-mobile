@@ -47,7 +47,7 @@ export function Setup({ onReady }: { onReady: (ws: Workspace) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const repo = parseRepo(repoInput);
-  const config: Config | null = repo ? { ...repo, token: token.trim(), projects: DEFAULT_PLACES.projects, memos: DEFAULT_PLACES.memos } : null;
+  const config: Config | null = repo ? { ...repo, token: token.trim(), projects: DEFAULT_PLACES.projects, memos: DEFAULT_PLACES.memos, drafts: DEFAULT_PLACES.drafts } : null;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
