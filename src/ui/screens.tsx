@@ -244,6 +244,7 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
   const { folders, notes, files } = ws.vault.folder(path);
   const crumbs = path ? path.split('/') : [];
   const isMemos = path === ws.places.memos;
+  const isDrafts = path === ws.places.drafts;
   // What moved deeper down: notes directly here are already listed below, newest first.
   const moved = path && folders.length ? ws.vault.recentUnder(path, 12).filter((m) => m.folder !== path).slice(0, 3) : [];
   return (
@@ -323,6 +324,12 @@ export function Shelf({ ws, path }: { ws: Workspace; path: string }) {
       {!folders.length && !notes.length && !files.length && <p className="quiet">ノートがありません</p>}
       {isMemos && (
         <a className="fab" href="#/new" aria-label="メモを書く">
+          <Icon name="pencil" size={20} />
+          書く
+        </a>
+      )}
+      {isDrafts && (
+        <a className="fab" href="#/write" aria-label="原稿を書く">
           <Icon name="pencil" size={20} />
           書く
         </a>
@@ -642,9 +649,10 @@ function NamesEdit({ ws }: { ws: Workspace }) {
 function PlacesEdit({ ws }: { ws: Workspace }) {
   const [projects, setProjects] = useState(ws.places.projects);
   const [memos, setMemos] = useState(ws.places.memos);
+  const [drafts, setDrafts] = useState(ws.places.drafts);
   if (!ws.config) return null;
   const save = async () => {
-    await ws.store.put('meta', 'config', { ...ws.config!, projects: projects.trim(), memos: memos.trim() });
+    await ws.store.put('meta', 'config', { ...ws.config!, projects: projects.trim(), memos: memos.trim(), drafts: drafts.trim() });
     toast('保存しました。開き直します', 'ok');
     setTimeout(() => location.reload(), 600);
   };
@@ -654,6 +662,10 @@ function PlacesEdit({ ws }: { ws: Workspace }) {
       <label className="field">
         メモを書く場所
         <input className="text" value={memos} onChange={(e) => setMemos(e.target.value)} autoCapitalize="off" autoCorrect="off" />
+      </label>
+      <label className="field">
+        じっくり書く場所
+        <input className="text" value={drafts} onChange={(e) => setDrafts(e.target.value)} autoCapitalize="off" autoCorrect="off" />
       </label>
       <label className="field">
         ホームに並べるプロジェクト

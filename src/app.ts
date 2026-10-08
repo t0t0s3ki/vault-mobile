@@ -10,7 +10,7 @@ import { MockRemote } from './remote/mock';
 import type { VaultRemote } from './remote/types';
 
 /** Everything that differs per person. Kept sealed on the device, never in the code. */
-export type Config = { owner: string; repo: string; branch: string; token: string; projects: string; memos?: string; names?: Partial<Names> };
+export type Config = { owner: string; repo: string; branch: string; token: string; projects: string; memos?: string; drafts?: string; names?: Partial<Names> };
 
 /**
  * What to call the person and the agent. Kept on the device (sealed with the config), never in the code:
@@ -20,8 +20,8 @@ export type Names = { me: string; agent: string };
 export const DEFAULT_NAMES: Names = { me: '持ち主', agent: 'エージェント' };
 
 /** Where things live in this vault. Defaults follow the PARA layout this app was first built for. */
-export type Places = { projects: string; memos: string };
-export const DEFAULT_PLACES: Places = { projects: '02_Projects', memos: '01_Inbox/_uniquenote' };
+export type Places = { projects: string; memos: string; drafts: string };
+export const DEFAULT_PLACES: Places = { projects: '02_Projects', memos: '01_Inbox/_uniquenote', drafts: '00_Cockpit/thinking/second-desk' };
 
 export type Workspace = {
   remote: VaultRemote;
@@ -84,7 +84,7 @@ export async function openGitHub(key: Key) {
   const store = new SealedStore(plain(), key);
   const config = await store.get<Config>('meta', 'config');
   if (!config) throw new Error('接続設定が見つかりません');
-  const places = { projects: config.projects || DEFAULT_PLACES.projects, memos: config.memos || DEFAULT_PLACES.memos };
+  const places = { projects: config.projects || DEFAULT_PLACES.projects, memos: config.memos || DEFAULT_PLACES.memos, drafts: config.drafts || DEFAULT_PLACES.drafts };
   const names = { me: config.names?.me?.trim() || DEFAULT_NAMES.me, agent: config.names?.agent?.trim() || DEFAULT_NAMES.agent };
   return assemble(remoteFor(config), store, places, { config, key, names });
 }
@@ -121,6 +121,7 @@ export type Route =
   | { name: 'edit'; path: string }
   | { name: 'settings' }
   | { name: 'new' }
+  | { name: 'write' }
   | { name: 'inbox'; tab: string }
   | { name: 'waiting'; task: string }
   | { name: 'tasks'; filter: string; q: string; task: string }
@@ -162,6 +163,8 @@ export function parseRoute(hash: string): Route {
       return { name: 'edit', path: tail };
     case 'new':
       return { name: 'new' };
+    case 'write':
+      return { name: 'write' };
     case 'inbox':
       return { name: 'inbox', tab: tail || 'memo' };
     case 'waiting':
