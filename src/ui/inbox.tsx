@@ -1,9 +1,44 @@
 import { useState } from 'react';
 import { href, useVersion, type Workspace } from '../app';
 import { findUrl } from '../core/clips';
+import { splitFrontmatter, type NoteMeta } from '../core/note';
 import { Icon } from './icons';
 import { ago, toast } from './kit';
 import { captureClip, useClips } from './work';
+
+const ymdOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Day heading for the memo stream, in the same words as kit.today(). */
+function dayLabel(day: string) {
+  const now = new Date();
+  if (day === ymdOf(now)) return '今日';
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (day === ymdOf(yesterday)) return '昨日';
+  if (!day) return '日付なし';
+  const d = new Date(day + 'T00:00:00');
+  const base = `${d.getMonth() + 1}月${d.getDate()}日 ${'日月火水木金土'[d.getDay()]}曜日`;
+  return d.getFullYear() !== now.getFullYear() ? `${d.getFullYear()}年 ${base}` : base;
+}
+
+/** HH:mm when the memo's stamp carries a time, nothing when only the day is known. */
+function timeOf(updated: string) {
+  return updated.match(/T(\d{2}:\d{2})/)?.[1] ?? '';
+}
+
+type MemoGroup = { day: string; items: NoteMeta[] };
+
+/** Group the newest-first list by day, keeping its order: new days first, new memos first within a day. */
+function groupMemos(memos: NoteMeta[]): MemoGroup[] {
+  const groups: MemoGroup[] = [];
+  for (const m of memos) {
+    const day = /^\d{4}-\d{2}-\d{2}/.test(m.updated) ? m.updated.slice(0, 10) : '';
+    const last = groups[groups.length - 1];
+    if (last && last.day === day) last.items.push(m);
+    else groups.push({ day, items: [m] });
+  }
+  return groups;
+}
 
 /** What the owner threw in from the phone: memos and clips. Newest first, nothing to "finish". */
 export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
@@ -59,14 +94,20 @@ export function Inbox({ ws, tab }: { ws: Workspace; tab: string }) {
       {!isClips && (
         <section className="block">
           {memos.length ? (
-            memos.map((m) => (
-              <a key={m.path} className="row" href={href.note(m.path)}>
-                <span className="row-main">
-                  <span className="row-title">{m.title}</span>
-                  {m.excerpt && <span className="row-excerpt">{m.excerpt}</span>}
-                  <span className="row-meta">{ago(m.updated)}</span>
-                </span>
-              </a>
+            groupMemos(memos).map((g) => (
+              <div key={g.day || 'none'} className="stream-day">
+                <h2 className="label">{dayLabel(g.day)}</h2>
+                {g.items.map((m) => {
+                  const body = splitFrontmatter(ws.vault.note(m.path)?.raw ?? '').body.trim();
+                  const time = timeOf(m.updated);
+                  return (
+                    <a key={m.path} className="bubble" href={href.note(m.path)}>
+                      <span className="bubble-text">{body || m.title}</span>
+                      {time && <span className="bubble-time">{time}</span>}
+                    </a>
+                  );
+                })}
+              </div>
             ))
           ) : (
             <p className="quiet">まだありません。「いま」の入力欄から、思いついたことを書けます。</p>
