@@ -2055,6 +2055,19 @@ nav.crumbs a + a::before {
 .ctx-chip small {
   opacity: 0.8;
 }
+/* Secondary throws under the one main button: there if wanted, never a decision to make first. */
+.plus-more {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.plus-more button {
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
 .state-done {
   background: var(--accent-soft);
   color: var(--accent);

@@ -113,17 +113,7 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
     close();
     location.hash = '#/write';
   };
-  const clip = async () => {
-    let src = text;
-    if (!findUrl(src)) {
-      try {
-        src = await navigator.clipboard.readText();
-      } catch {
-        return toast('URL を貼り付けてから押してください', 'info');
-      }
-    }
-    const url = findUrl(src);
-    if (!url) return toast('URL が見つかりませんでした', 'info');
+  const clip = async (url: string) => {
     const note = text.replace(url, '').trim();
     const dup = [...ws.vault.metas.values()].some((m) => m.path.startsWith('01_Inbox/Clips/') && ws.vault.note(m.path)?.raw.includes(url));
     if (dup) return toast('このURLはもうクリップしてあります', 'info');
@@ -131,6 +121,16 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
     const { r } = await captureClip(ws, { url, note: note || undefined });
     setBusy(false);
     r === 'saved' ? done(`クリップしました。中身は${ws.names.agent}があとで読みます`) : failed(r);
+  };
+  /**
+   * The one main action: no choosing what the throw is. A URL in the text makes it a clip
+   * (the rest rides along as the note); anything else is a memo with the context attached.
+   * Sorting into 頼む / 日記 / long-form stays one tap away, below the button.
+   */
+  const throwIt = async () => {
+    if (!text.trim()) return area.current?.focus();
+    const url = findUrl(text);
+    return url ? clip(url) : memo();
   };
 
   return (
@@ -185,23 +185,24 @@ export function PlusSheet({ ws }: { ws: Workspace }) {
             <p className="capture-hint">できたら Now の「{ws.names.agent}たち」に出ます。Vault の中を調べます（Slack とWeb検索は見られません）。外への送信はしません。</p>
           </>
         ) : (
-          <div className="capture-actions">
-            <button className="chip-btn strong" disabled={busy} onClick={memo}>
-              <Icon name="pencil" size={16} /> メモ
-            </button>
-            <button className="chip-btn" disabled={busy || !text.trim()} onClick={() => setMode('ask')}>
-              <Icon name="send" size={16} /> {ws.names.agent}に頼む
-            </button>
-            <button className="chip-btn" disabled={busy} onClick={clip}>
-              <Icon name="link" size={16} /> クリップ
-            </button>
-            <button className="chip-btn" disabled={busy} onClick={() => setMode('diary')}>
-              <Icon name="heart" size={16} /> 日記
-            </button>
-            <button className="chip-btn" disabled={busy} onClick={write}>
-              <Icon name="note" size={16} /> じっくり書く
-            </button>
-          </div>
+          <>
+            <div className="capture-actions">
+              <button className="chip-btn strong" disabled={busy || !text.trim()} onClick={throwIt}>
+                <Icon name="send" size={16} /> 投げる
+              </button>
+            </div>
+            <div className="plus-more">
+              <button disabled={busy || !text.trim()} onClick={() => setMode('ask')}>
+                {ws.names.agent}に頼む
+              </button>
+              <button disabled={busy} onClick={() => setMode('diary')}>
+                日記にする
+              </button>
+              <button disabled={busy} onClick={write}>
+                じっくり書く
+              </button>
+            </div>
+          </>
         )}
       </div>
     </Sheet>
